@@ -1,0 +1,55 @@
+.rockGrid {
+  list-style: none;
+  padding: 0;
+  margin-block: 2em;
+  border-top: 1px solid var(--color-line-base);
+}
+
+.rock {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 1.25rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--color-line-base);
+  align-items: start;
+}
+
+.num {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-brand-500);
+  padding-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.meta {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.69rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  margin-bottom: 0.25rem;
+}
+
+.label {
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+  color: var(--color-ink-base);
+  margin: 0 0 0.4rem;
+}
+
+.body p {
+  font-size: 1.03rem;
+  color: #2f2f2f;
+  margin: 0;
+  line-height: 1.52;
+}

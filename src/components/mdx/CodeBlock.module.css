@@ -1,0 +1,37 @@
+.codeBlock {
+  background: #111111;
+  color: #e8e8e8;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 13.5px;
+  line-height: 1.7;
+  border-radius: 10px;
+  padding: 24px;
+  margin-block: 2em;
+  overflow-x: auto;
+  border-left: 4px solid var(--color-brand-500);
+}
+
+.label {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b6b6b;
+  margin: 0 0 10px;
+}
+
+.body :global(.c) {
+  color: #7d8590;
+}
+
+.body :global(.d) {
+  color: #ff7b72;
+}
+
+.body :global(.a) {
+  color: #7ee787;
+}
+
+.body :global(.u) {
+  color: #79c0ff;
+}

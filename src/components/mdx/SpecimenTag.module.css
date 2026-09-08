@@ -1,0 +1,9 @@
+.tag {
+  display: inline-block;
+  background: var(--color-surface-muted);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius-sm);
+  margin-block: 0.75rem;
+}

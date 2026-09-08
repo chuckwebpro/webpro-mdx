@@ -1,0 +1,92 @@
+.crescendo {
+  background: var(--color-neutral-950);
+  color: #fff;
+  padding: clamp(3rem, 6vw, 5rem) 0;
+  border-top: 5px solid var(--color-brand-500);
+}
+
+.inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-gutter);
+}
+
+.eyebrow {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-brand-500);
+  margin: 0 0 1rem;
+}
+
+.heading {
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-weight: 800;
+  font-size: 0.875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #fff;
+  border-bottom: 2px solid #2a2a2a;
+  padding-bottom: 0.75rem;
+  margin: 0 0 1.5rem;
+}
+
+.body {
+  color: #d8d8d8;
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: clamp(1.05rem, 1.5vw, 1.15rem);
+  line-height: 1.6;
+  margin: 0 0 1rem;
+}
+
+.bookTitle {
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-weight: 900;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  line-height: 0.96;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin: 2.5rem 0 0.375rem;
+}
+
+.dot {
+  color: var(--color-brand-500);
+}
+
+.bookSub {
+  font-family: 'Newsreader', Georgia, serif;
+  font-style: italic;
+  font-size: 1.2rem;
+  color: #bdbdbd;
+  margin: 0 0 2rem;
+}
+
+.ctaRow {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cta {
+  font-family: 'Archivo', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  padding: 1rem 1.875rem;
+  border-radius: var(--radius-md);
+  display: inline-block;
+}
+
+.ctaPrimary {
+  background: var(--color-brand-500);
+  color: #fff;
+}
+
+.ctaGhost {
+  border: 1.5px solid #555;
+  color: #fff;
+}

@@ -1,0 +1,13 @@
+.sourceNote {
+  font-size: 0.9375rem;
+  color: #555;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  line-height: 1.7;
+  border-left: 2px solid var(--color-line-base);
+  padding-left: 1rem;
+  margin-block: -0.375em 1.625em;
+}
+
+.sourceNote p {
+  margin: 0;
+}
