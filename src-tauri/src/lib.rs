@@ -818,11 +818,30 @@ fn copy_image_to_draft(app: tauri::AppHandle, slug: String, source_path: String)
     Ok(format!("assets/{}", filename))
 }
 
+fn apply_window_icon(app: &tauri::App) {
+    let icon_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("icons/32x32.png");
+    let icon = if icon_path.is_file() {
+        tauri::image::Image::from_path(&icon_path).ok()
+    } else {
+        None
+    }
+    .or_else(|| tauri::image::Image::from_bytes(include_bytes!("../icons/32x32.png")).ok());
+
+    let Some(icon) = icon else {
+        return;
+    };
+
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.set_icon(icon);
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
+            apply_window_icon(app);
             let settings = load_settings(&app.handle()).unwrap_or_default();
             ensure_drafts_dir(Path::new(&settings.drafts_dir)).ok();
             save_settings(&app.handle(), &settings).ok();
