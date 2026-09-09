@@ -168,7 +168,7 @@ export default function App() {
     await showMessage(
       apiMode === 'browser'
         ? `Downloaded ${content.meta.slug}.mdx to your browser downloads.\n\nFor full export with images, use npm run tauri:dev.`
-        : `Exported to:\n${result.exportDir}\n\n${result.imageCount} image(s) included.\n\nSee README.txt for copy instructions.`,
+        : `Exported to:\n${result.exportDir}\n\n${result.imageCount} image(s) included.\n\nUnzip and follow README.txt for copy instructions.`,
       { title: 'Export complete' },
     );
   }, [content]);

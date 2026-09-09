@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 use tauri::Manager;
+use walkdir::WalkDir;
+use zip::write::SimpleFileOptions;
+use zip::{CompressionMethod, ZipWriter};
 
 const SETTINGS_FILE: &str = "settings.json";
 const DEFAULT_DRAFTS_FOLDER: &str = "WebproArticles";
@@ -502,6 +505,44 @@ fn build_frontmatter(meta: &DraftMeta) -> String {
     lines.join("\n")
 }
 
+fn zip_export_folder(export_root: &Path) -> Result<PathBuf, String> {
+    let parent = export_root
+        .parent()
+        .ok_or_else(|| "Invalid export folder path".to_string())?;
+    let zip_path = parent.join(format!(
+        "{}.zip",
+        export_root
+            .file_name()
+            .ok_or_else(|| "Invalid export folder name".to_string())?
+            .to_string_lossy()
+    ));
+
+    let file = fs::File::create(&zip_path).map_err(|e| e.to_string())?;
+    let mut writer = ZipWriter::new(file);
+    let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+
+    for entry in WalkDir::new(export_root) {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let path = entry.path();
+        if path.is_dir() {
+            continue;
+        }
+
+        let rel = path
+            .strip_prefix(parent)
+            .map_err(|e| e.to_string())?
+            .to_string_lossy()
+            .replace('\\', "/");
+
+        writer.start_file(rel, options).map_err(|e| e.to_string())?;
+        let mut file = fs::File::open(path).map_err(|e| e.to_string())?;
+        std::io::copy(&mut file, &mut writer).map_err(|e| e.to_string())?;
+    }
+
+    writer.finish().map_err(|e| e.to_string())?;
+    Ok(zip_path)
+}
+
 #[tauri::command]
 fn export_draft(app: tauri::AppHandle, slug: String, export_dir: String) -> Result<ExportResult, String> {
     let settings = load_settings(&app)?;
@@ -558,8 +599,11 @@ fn export_draft(app: tauri::AppHandle, slug: String, export_dir: String) -> Resu
     );
     fs::write(export_root.join("README.txt"), readme).map_err(|e| e.to_string())?;
 
+    let zip_path = zip_export_folder(&export_root)?;
+    fs::remove_dir_all(&export_root).map_err(|e| e.to_string())?;
+
     Ok(ExportResult {
-        export_dir: export_root.to_string_lossy().into_owned(),
+        export_dir: zip_path.to_string_lossy().into_owned(),
         mdx_path: mdx_path.to_string_lossy().into_owned(),
         image_count,
     })
