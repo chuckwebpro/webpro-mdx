@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { CollapsibleSection } from '../layout/CollapsibleSection';
 import { buildByline, yearsInOrganicSearchLabel } from '../../lib/byline';
 import type { DraftMeta } from '../../lib/types';
 import {
@@ -14,15 +15,6 @@ interface Props {
   meta: DraftMeta;
   body?: string;
   onChange: (meta: DraftMeta) => void;
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="form-section">
-      <h3 className="form-section-title">{title}</h3>
-      <div className="form-section-body">{children}</div>
-    </section>
-  );
 }
 
 export function FrontmatterForm({ meta, body = '', onChange }: Props) {
@@ -66,7 +58,7 @@ export function FrontmatterForm({ meta, body = '', onChange }: Props) {
 
   return (
     <div className="frontmatter-form">
-      <Section title="1. Title & URL">
+      <CollapsibleSection title="1. Title & URL">
         <div className="form-row">
           <label htmlFor="title">Title *</label>
           <input
@@ -95,9 +87,9 @@ export function FrontmatterForm({ meta, body = '', onChange }: Props) {
             onChange={(e) => update({ eyebrow: e.target.value })}
           />
         </div>
-      </Section>
+      </CollapsibleSection>
 
-      <Section title="2. Hero">
+      <CollapsibleSection title="2. Hero">
         <div className="form-row">
           <label htmlFor="dek">Subtitle *</label>
           <textarea
@@ -143,9 +135,9 @@ export function FrontmatterForm({ meta, body = '', onChange }: Props) {
           <label>Byline preview</label>
           <p className="byline-preview">{bylinePreview}</p>
         </div>
-      </Section>
+      </CollapsibleSection>
 
-      <Section title="3. Publishing">
+      <CollapsibleSection title="3. Publishing">
         <div className="form-row">
           <label htmlFor="publishDate">Publish date *</label>
           <input
@@ -215,9 +207,9 @@ export function FrontmatterForm({ meta, body = '', onChange }: Props) {
             </div>
           )}
         </div>
-      </Section>
+      </CollapsibleSection>
 
-      <Section title="4. SEO">
+      <CollapsibleSection title="4. SEO">
         <div className="form-row">
           <label htmlFor="description">Meta description</label>
           <textarea
@@ -228,7 +220,7 @@ export function FrontmatterForm({ meta, body = '', onChange }: Props) {
             placeholder="150–160 characters for search snippets (optional)"
           />
         </div>
-      </Section>
+      </CollapsibleSection>
     </div>
   );
 }

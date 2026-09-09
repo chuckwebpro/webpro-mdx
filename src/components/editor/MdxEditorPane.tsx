@@ -56,6 +56,7 @@ import {
 
 import '@mdxeditor/editor/style.css';
 
+import { CollapsibleSection } from '../layout/CollapsibleSection';
 import { getComponentTemplate, type ComponentId } from '../../lib/components';
 
 import { useComponentDrag } from '../../lib/component-drag';
@@ -220,15 +221,7 @@ export const MdxEditorPane = forwardRef<MdxEditorHandle, Props>(function MdxEdit
 
   return (
 
-    <section className="body-editor-section">
-
-      <div className="body-editor-header">
-
-        <h3>5. Article body</h3>
-
-      </div>
-
-
+    <CollapsibleSection title="5. Article body" className="body-editor-section">
 
       <div
 
@@ -308,7 +301,7 @@ export const MdxEditorPane = forwardRef<MdxEditorHandle, Props>(function MdxEdit
 
       </div>
 
-    </section>
+    </CollapsibleSection>
 
   );
 

@@ -1,3 +1,4 @@
+import { CollapsibleSection } from '../layout/CollapsibleSection';
 import type { DraftMeta } from '../../lib/types';
 import {
   DEFAULT_CRESCENDO_BOOK_SUBTITLE,
@@ -34,9 +35,7 @@ export function CrescendoForm({ meta, onChange }: Props) {
   };
 
   return (
-    <section className="crescendo-form-section">
-      <h3 className="form-section-title">6. Crescendo</h3>
-      <div className="form-section-body">
+    <CollapsibleSection title="6. Crescendo" className="crescendo-form-section">
         <div className="form-row">
           <label htmlFor="crescendoEyebrow">Eyebrow</label>
           <input
@@ -159,7 +158,6 @@ export function CrescendoForm({ meta, onChange }: Props) {
             Open secondary link in new tab
           </label>
         </div>
-      </div>
-    </section>
+    </CollapsibleSection>
   );
 }
