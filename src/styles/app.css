@@ -722,6 +722,28 @@ body.component-drag-active {
   min-height: 90vh;
 }
 
+/* App chrome .btn uses theme tokens; editor content is always light. */
+.mdx-editor-wrap .btn {
+  border: 1px solid #d4cfc4;
+  background: #fff;
+  color: #17181a;
+}
+
+.mdx-editor-wrap .btn:hover {
+  border-color: var(--color-brand-500);
+  background: #fff;
+}
+
+.mdx-editor-wrap .btn-danger {
+  color: #5c5a54;
+}
+
+.mdx-editor-wrap .btn-danger:hover {
+  border-color: var(--color-brand-500);
+  background: rgba(224, 70, 56, 0.08);
+  color: var(--color-brand-500);
+}
+
 /* Inline JSX component property fields in MDXEditor */
 .jsx-inline-props {
   margin-bottom: 0.5rem;
@@ -772,6 +794,164 @@ body.component-drag-active {
 .jsx-inline-prop-input:focus {
   outline: 2px solid rgba(224, 70, 56, 0.35);
   border-color: var(--color-brand-500);
+}
+
+.jsx-shot-src-row {
+  grid-template-columns: 5.5rem 1fr;
+}
+
+.jsx-shot-src-controls {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  min-width: 0;
+}
+
+.jsx-shot-src-controls .jsx-inline-prop-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.jsx-shot-browse {
+  flex-shrink: 0;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.jsx-shot-file-input {
+  display: none;
+}
+
+.jsx-shot-hint {
+  margin: 0.45rem 0 0;
+  font-size: 0.68rem;
+  color: #5c5a54;
+  line-height: 1.4;
+}
+
+.jsx-body-editor {
+  margin-top: 0.5rem;
+  border: 1px solid #d4cfc4;
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.jsx-body-editor-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.75rem;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid #e8e4db;
+  background: #f7f5f0;
+}
+
+.jsx-body-editor-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #5c5a54;
+}
+
+.jsx-grid-add-btn {
+  padding: 0.25rem 0.55rem;
+  font-size: 0.72rem;
+}
+
+.jsx-rock-item {
+  position: relative;
+}
+
+.jsx-rock-remove {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  z-index: 1;
+}
+
+.jsx-rock-item .jsx-inline-props {
+  padding-right: 2rem;
+}
+
+.jsx-body-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.jsx-body-tool-btn {
+  min-width: 1.65rem;
+  min-height: 1.65rem;
+  padding: 0.1rem 0.35rem;
+  border: 1px solid #d4cfc4;
+  border-radius: 4px;
+  background: #fff;
+  color: #17181a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.jsx-body-tool-btn:hover {
+  border-color: var(--color-brand-500);
+}
+
+.jsx-body-tool-btn.active {
+  background: rgba(224, 70, 56, 0.12);
+  border-color: var(--color-brand-500);
+  color: var(--color-brand-500);
+}
+
+.jsx-body-tool-sep {
+  width: 1px;
+  height: 1.1rem;
+  background: #d4cfc4;
+  margin: 0 0.15rem;
+}
+
+.editor-error-boundary {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-brand-500);
+  border-radius: 8px;
+  background: rgba(224, 70, 56, 0.08);
+}
+
+.editor-error-boundary h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.editor-error-boundary p {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.editor-error-hint {
+  color: var(--app-text-muted);
+  font-size: 0.78rem !important;
+}
+
+.jsx-body-content {
+  min-height: 4.5rem;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.jsx-body-content:focus {
+  outline: none;
+}
+
+.mdx-editor-wrap .jsx-body-editor [class*='nestedEditor'] {
+  border: 0;
+  border-radius: 0;
+  min-height: 4.5rem;
 }
 
 .empty-state {

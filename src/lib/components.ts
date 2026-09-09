@@ -58,7 +58,7 @@ export const COMPONENT_CATALOG: ComponentCatalogItem[] = [
   { id: 'PullQuote', label: 'Quote', description: 'Large bordered quote', group: 'Callouts' },
   { id: 'Specimen', label: 'Specimen', description: 'Faux notification card', group: 'Callouts' },
   { id: 'SourceNote', label: 'Source Note', description: 'Citation footnote', group: 'Callouts' },
-  { id: 'Shot', label: 'Image', description: 'Image with optional caption', group: 'Media' },
+  { id: 'Shot', label: 'Image', description: 'Image from URL or file upload', group: 'Media' },
   { id: 'RockGrid', label: 'Rock Grid', description: 'Numbered checklist', group: 'Lists' },
   { id: 'CraftGrid', label: 'Craft Grid', description: 'Lettered list', group: 'Lists' },
   { id: 'CodeBlock', label: 'Code Block', description: 'Syntax-colored code', group: 'Other' },

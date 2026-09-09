@@ -22,6 +22,7 @@ import {
   DEFAULT_EYEBROW,
   effectiveEyebrow,
 } from './types';
+import { normalizeDraftContent } from './normalize-draft';
 import { slugify, todayIsoDate } from './utils';
 
 const STORAGE_KEY = 'webpro-mdx-drafts';
@@ -110,7 +111,7 @@ export const browserApi = {
   async loadDraft(slug: string): Promise<DraftContent> {
     const draft = loadAll()[slug];
     if (!draft) throw new Error(`Draft "${slug}" not found`);
-    return draft;
+    return normalizeDraftContent(draft);
   },
 
   async saveDraft(content: DraftContent): Promise<DraftContent> {

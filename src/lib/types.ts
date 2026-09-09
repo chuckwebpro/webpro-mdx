@@ -56,9 +56,11 @@ export interface ExportResult {
 export const CATEGORIES = [
   'White Paper',
   'SEO Scientific',
+  'AI Search Measurement',
   'Client Report',
   'Press Release',
   'Content Governance',
+  'Content Strategy',
 ] as const;
 
 export const DEFAULT_EYEBROW = 'A WEBPRO White Paper / SEO Scientific';

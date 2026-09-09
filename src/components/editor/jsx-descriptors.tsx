@@ -1,5 +1,11 @@
 import { type JsxComponentDescriptor } from '@mdxeditor/editor';
+import { ChildrenTextJsxEditor } from './ChildrenTextJsxEditor';
+import { CraftGridJsxEditor } from './CraftGridJsxEditor';
+import { CraftRowJsxEditor } from './CraftRowJsxEditor';
 import { InlinePropsJsxEditor } from './InlinePropsJsxEditor';
+import { RockGridJsxEditor } from './RockGridJsxEditor';
+import { RockJsxEditor } from './RockJsxEditor';
+import { ShotJsxEditor } from './ShotJsxEditor';
 
 const flow = (
   name: string,
@@ -19,28 +25,64 @@ export const jsxComponentDescriptors: JsxComponentDescriptor[] = [
     { name: 'subjectFlag', type: 'string' },
     { name: 'subject', type: 'string', required: true },
   ]),
-  flow('SpecimenTag', [], true),
+  {
+    name: 'SpecimenTag',
+    kind: 'flow',
+    props: [],
+    hasChildren: true,
+    Editor: ChildrenTextJsxEditor,
+  },
   flow('PullQuote', []),
-  flow('Shot', [
-    { name: 'src', type: 'string', required: true },
-    { name: 'alt', type: 'string', required: true },
-    { name: 'rank', type: 'number' },
-    { name: 'caption', type: 'string' },
-  ], false),
-  flow('RockGrid', []),
-  flow('Rock', [
-    { name: 'n', type: 'expression', required: true },
-    { name: 'label', type: 'string', required: true },
-    { name: 'meta', type: 'string' },
-  ]),
+  {
+    name: 'Shot',
+    kind: 'flow',
+    props: [
+      { name: 'src', type: 'string', required: true },
+      { name: 'alt', type: 'string', required: true },
+      { name: 'rank', type: 'number' },
+      { name: 'caption', type: 'string' },
+    ],
+    hasChildren: false,
+    Editor: ShotJsxEditor,
+  },
+  {
+    name: 'RockGrid',
+    kind: 'flow',
+    props: [],
+    hasChildren: true,
+    Editor: RockGridJsxEditor,
+  },
+  {
+    name: 'Rock',
+    kind: 'flow',
+    props: [
+      { name: 'n', type: 'expression', required: true },
+      { name: 'label', type: 'string', required: true },
+      { name: 'meta', type: 'string' },
+    ],
+    hasChildren: true,
+    Editor: RockJsxEditor,
+  },
   flow('CodeBlock', [
     { name: 'label', type: 'string' },
     { name: 'html', type: 'expression', required: true },
   ], false),
-  flow('CraftGrid', []),
-  flow('CraftRow', [
-    { name: 'n', type: 'string', required: true },
-    { name: 'label', type: 'string', required: true },
-  ]),
+  {
+    name: 'CraftGrid',
+    kind: 'flow',
+    props: [],
+    hasChildren: true,
+    Editor: CraftGridJsxEditor,
+  },
+  {
+    name: 'CraftRow',
+    kind: 'flow',
+    props: [
+      { name: 'n', type: 'string', required: true },
+      { name: 'label', type: 'string', required: true },
+    ],
+    hasChildren: true,
+    Editor: CraftRowJsxEditor,
+  },
   flow('SourceNote', []),
 ];

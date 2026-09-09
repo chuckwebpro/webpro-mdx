@@ -1,3 +1,7 @@
+import { useEffect, useState } from 'react';
+import { isDraftAssetPath, resolveDraftAssetUrl } from '../../lib/draft-assets';
+import { useDraftEditorSlugOptional } from '../../lib/draft-editor-context';
+
 interface Props {
   src: string;
   alt: string;
@@ -6,7 +10,26 @@ interface Props {
 }
 
 export function Shot({ src = '', alt = '', rank, caption }: Props) {
+  const slug = useDraftEditorSlugOptional();
+  const [resolvedSrc, setResolvedSrc] = useState(src);
   const safeSrc = src ?? '';
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!safeSrc.trim() || !isDraftAssetPath(safeSrc) || !slug) {
+      setResolvedSrc(safeSrc);
+      return;
+    }
+
+    void resolveDraftAssetUrl(slug, safeSrc).then((url) => {
+      if (!cancelled) setResolvedSrc(url);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [safeSrc, slug]);
 
   if (!safeSrc.trim()) {
     return (
@@ -41,13 +64,11 @@ export function Shot({ src = '', alt = '', rank, caption }: Props) {
     );
   }
 
-  const imgSrc = safeSrc.startsWith('assets/') ? safeSrc : safeSrc;
-
   return (
     <figure className="shot-block" style={{ marginBlock: '2em' }}>
       <div style={{ position: 'relative' }}>
         <img
-          src={imgSrc}
+          src={resolvedSrc}
           alt={alt}
           style={{
             width: '100%',

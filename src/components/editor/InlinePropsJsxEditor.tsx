@@ -1,10 +1,7 @@
 import { useCallback, useMemo } from 'react';
-import {
-  NestedLexicalEditor,
-  useMdastNodeUpdater,
-  type JsxEditorProps,
-} from '@mdxeditor/editor';
+import { useMdastNodeUpdater, type JsxEditorProps } from '@mdxeditor/editor';
 import { getComponentDisplayName } from '../../lib/components';
+import { ComponentBodyEditor } from './ComponentBodyEditor';
 import { InlinePropertyEditor } from './InlinePropertyEditor';
 
 function isExpressionValue(
@@ -112,7 +109,7 @@ export function InlinePropsJsxEditor({ mdastNode, descriptor }: JsxEditorProps) 
         />
       )}
       {descriptor.hasChildren ? (
-        <NestedLexicalEditor
+        <ComponentBodyEditor
           block={descriptor.kind === 'flow'}
           getContent={(node) => ('children' in node ? node.children : [])}
           getUpdatedMdastNode={(node, children) =>

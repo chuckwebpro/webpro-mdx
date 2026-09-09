@@ -3,12 +3,14 @@ import { Sidebar } from './components/layout/Sidebar';
 import { ResizeDivider } from './components/layout/ResizeDivider';
 import { FrontmatterForm } from './components/frontmatter/FrontmatterForm';
 import { CrescendoForm } from './components/frontmatter/CrescendoForm';
+import { EditorErrorBoundary } from './components/editor/EditorErrorBoundary';
 import { MdxEditorPane, type MdxEditorHandle } from './components/editor/MdxEditorPane';
 import { ArticlePreview } from './components/preview/ArticlePreview';
 import { validateForExport } from './lib/schema';
 import { getApiMode } from './lib/browser-api';
 import type { ComponentId } from './lib/components';
 import { ComponentDragProvider } from './lib/component-drag';
+import { DraftEditorProvider } from './lib/draft-editor-context';
 import {
   clampPreviewWidth,
   getEqualPreviewWidth,
@@ -73,11 +75,15 @@ export default function App() {
   }, [theme]);
 
   const openDraft = useCallback(async (slug: string) => {
-    const draft = await loadDraft(slug);
-    setContent(draft);
-    setActiveSlug(slug);
-    setDirty(false);
-    setSaveStatus('');
+    try {
+      const draft = await loadDraft(slug);
+      setContent(draft);
+      setActiveSlug(slug);
+      setDirty(false);
+      setSaveStatus('');
+    } catch (err) {
+      await showMessage(String(err), { title: 'Failed to open draft', kind: 'error' });
+    }
   }, []);
 
   const handleNew = useCallback(async () => {
@@ -259,17 +265,10 @@ export default function App() {
       />
 
       <div ref={workspaceRef} className="workspace">
+      {content ? (
+      <DraftEditorProvider slug={content.meta.slug}>
       <div className={`editor-workspace ${chromeClass}`}>
       <main className="editor-pane">
-        {!content ? (
-          <div className="empty-state">
-            <h2>No article selected</h2>
-            <p>Create a new article or select one from the sidebar.</p>
-            <button type="button" className="btn btn-primary" onClick={handleNew}>
-              + New Article
-            </button>
-          </div>
-        ) : (
           <>
             <div className="editor-toolbar">
               <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600 }}>{content.meta.title}</span>
@@ -282,33 +281,49 @@ export default function App() {
             </div>
             <div className="editor-content">
               <FrontmatterForm meta={content.meta} body={content.body} onChange={updateMeta} />
-              <MdxEditorPane
-                ref={editorRef}
-                key={content.meta.slug}
-                body={content.body}
-                onChange={updateBody}
-              />
+              <EditorErrorBoundary key={content.meta.slug}>
+                <MdxEditorPane
+                  ref={editorRef}
+                  body={content.body}
+                  onChange={updateBody}
+                />
+              </EditorErrorBoundary>
               <CrescendoForm meta={content.meta} onChange={updateMeta} />
             </div>
             <div className="status-bar">
               {saveStatus || (dirty ? 'Unsaved' : 'Saved')} · {content.meta.slug}.mdx
             </div>
           </>
-        )}
       </main>
 
       <ResizeDivider onResize={handlePreviewResize} onResizeEnd={handlePreviewResizeEnd} />
       </div>
 
       <aside className="preview-pane" style={{ width: previewWidth }}>
-        {content ? (
-          <ArticlePreview meta={content.meta} body={content.body} />
-        ) : (
+        <ArticlePreview meta={content.meta} body={content.body} />
+      </aside>
+      </DraftEditorProvider>
+      ) : (
+      <>
+      <div className={`editor-workspace ${chromeClass}`}>
+      <main className="editor-pane">
+          <div className="empty-state">
+            <h2>No article selected</h2>
+            <p>Create a new article or select one from the sidebar.</p>
+            <button type="button" className="btn btn-primary" onClick={handleNew}>
+              + New Article
+            </button>
+          </div>
+      </main>
+      <ResizeDivider onResize={handlePreviewResize} onResizeEnd={handlePreviewResizeEnd} />
+      </div>
+      <aside className="preview-pane" style={{ width: previewWidth }}>
           <div className="empty-state">
             <p>Preview appears here when editing an article.</p>
           </div>
-        )}
       </aside>
+      </>
+      )}
       </div>
 
     </div>

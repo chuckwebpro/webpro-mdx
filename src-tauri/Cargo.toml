@@ -1,6 +1,6 @@
 [package]
 name = "webpro-mdx"
-version = "0.2.0"
+version = "0.2.1"
 description = "Offline MDX editor for WEBPRO SEO Insights articles"
 authors = ["WEBPRO International Inc."]
 edition = "2021"
@@ -20,6 +20,7 @@ serde_json = "1"
 chrono = { version = "0.4", features = ["serde"] }
 walkdir = "2"
 zip = "2"
+base64 = "0.22"
 
 [profile.release]
 panic = "abort"

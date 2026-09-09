@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { browserApi, getApiMode } from './browser-api';
+import { normalizeDraftContent } from './normalize-draft';
 import type {
   AppSettings,
   DraftContent,
@@ -33,8 +34,11 @@ export async function createDraft(title: string, slug?: string): Promise<DraftCo
 }
 
 export async function loadDraft(slug: string): Promise<DraftContent> {
-  if (getApiMode() === 'browser') return browserApi.loadDraft(slug);
-  return tauri('load_draft', { slug });
+  const draft =
+    getApiMode() === 'browser'
+      ? await browserApi.loadDraft(slug)
+      : await tauri<DraftContent>('load_draft', { slug });
+  return normalizeDraftContent(draft);
 }
 
 export async function saveDraft(content: DraftContent): Promise<DraftContent> {

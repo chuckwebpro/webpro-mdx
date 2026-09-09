@@ -768,6 +768,38 @@ fn unquote_yaml(s: &str) -> String {
     }
 }
 
+fn guess_image_mime(path: &Path) -> &'static str {
+    match path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .unwrap_or("")
+        .to_lowercase()
+        .as_str()
+    {
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "webp" => "image/webp",
+        "svg" => "image/svg+xml",
+        _ => "image/png",
+    }
+}
+
+#[tauri::command]
+fn read_draft_asset_data_url(app: tauri::AppHandle, slug: String, rel_path: String) -> Result<String, String> {
+    use base64::{engine::general_purpose::STANDARD, Engine as _};
+
+    let settings = load_settings(&app)?;
+    let rel = rel_path.strip_prefix("./").unwrap_or(&rel_path);
+    let asset_path = draft_dir(Path::new(&settings.drafts_dir), &slug).join(rel);
+    if !asset_path.is_file() {
+        return Err(format!("Asset not found: {}", rel_path));
+    }
+
+    let bytes = fs::read(&asset_path).map_err(|e| e.to_string())?;
+    let mime = guess_image_mime(&asset_path);
+    Ok(format!("data:{};base64,{}", mime, STANDARD.encode(bytes)))
+}
+
 #[tauri::command]
 fn copy_image_to_draft(app: tauri::AppHandle, slug: String, source_path: String) -> Result<String, String> {
     let settings = load_settings(&app)?;
@@ -807,6 +839,7 @@ pub fn run() {
             export_draft,
             import_mdx,
             copy_image_to_draft,
+            read_draft_asset_data_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

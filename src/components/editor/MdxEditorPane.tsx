@@ -62,6 +62,7 @@ import { getComponentTemplate, type ComponentId } from '../../lib/components';
 import { useComponentDrag } from '../../lib/component-drag';
 
 import { jsxComponentDescriptors } from './jsx-descriptors';
+import { nestedEditorFormattingPlugin } from './nested-editor-plugin';
 
 
 
@@ -93,6 +94,8 @@ export const MdxEditorPane = forwardRef<MdxEditorHandle, Props>(function MdxEdit
 
   const editorRef = useRef<MDXEditorMethods>(null);
 
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
   const skipExternalSync = useRef(false);
 
   const { dropTargetActive, registerDropZone } = useComponentDrag();
@@ -102,6 +105,8 @@ export const MdxEditorPane = forwardRef<MdxEditorHandle, Props>(function MdxEdit
   const setDropZoneRef = useCallback(
 
     (el: HTMLDivElement | null) => {
+
+      wrapRef.current = el;
 
       registerDropZone(el);
 
@@ -123,17 +128,49 @@ export const MdxEditorPane = forwardRef<MdxEditorHandle, Props>(function MdxEdit
 
 
 
+      const scrollEl = wrapRef.current?.closest('.editor-content') as HTMLElement | null;
+
+      const scrollTop = scrollEl?.scrollTop ?? 0;
+
+      const restoreScroll = () => {
+
+        if (scrollEl) scrollEl.scrollTop = scrollTop;
+
+      };
+
+
+
       const current = editor.getMarkdown();
 
       const separator = current.trim().length > 0 ? '\n\n' : '';
 
-      const next = `${current}${separator}${snippet.trim()}\n\n`;
+      const toInsert = `${separator}${snippet.trim()}\n\n`;
+
+
 
       skipExternalSync.current = true;
 
-      editor.setMarkdown(next);
+      editor.focus(
 
-      onChange(next);
+        () => {
+
+          editor.insertMarkdown(toInsert);
+
+          onChange(editor.getMarkdown());
+
+          requestAnimationFrame(() => {
+
+            restoreScroll();
+
+            requestAnimationFrame(restoreScroll);
+
+          });
+
+        },
+
+        { defaultSelection: 'rootEnd', preventScroll: true },
+
+      );
 
     },
 
@@ -242,6 +279,8 @@ export const MdxEditorPane = forwardRef<MdxEditorHandle, Props>(function MdxEdit
           onChange={handleChange}
 
           plugins={[
+
+            nestedEditorFormattingPlugin(),
 
             jsxPlugin({ jsxComponentDescriptors }),
 
