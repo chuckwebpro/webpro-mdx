@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
+import { ResizeDivider } from './components/layout/ResizeDivider';
 import { FrontmatterForm } from './components/frontmatter/FrontmatterForm';
 import { CrescendoForm } from './components/frontmatter/CrescendoForm';
 import { MdxEditorPane, type MdxEditorHandle } from './components/editor/MdxEditorPane';
-import { InsertImageDialog } from './components/editor/InsertImageDialog';
 import { ArticlePreview } from './components/preview/ArticlePreview';
 import { validateForExport } from './lib/schema';
 import { getApiMode } from './lib/browser-api';
 import type { ComponentId } from './lib/components';
-import { buildShotSnippet, type ShotFields } from './lib/shot-snippet';
 import { ComponentDragProvider } from './lib/component-drag';
+import {
+  clampPreviewWidth,
+  getEqualPreviewWidth,
+  savePreviewWidth,
+} from './lib/preview-width';
+import { loadTheme, saveTheme, type Theme } from './lib/theme';
 import type { DraftContent, DraftSummary } from './lib/types';
 import {
   createDraft,
@@ -37,8 +42,13 @@ export default function App() {
   const [dirty, setDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState('');
   const [startupError, setStartupError] = useState<string | null>(null);
-  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [theme, setTheme] = useState<Theme>(loadTheme);
+  const [previewWidth, setPreviewWidth] = useState(() =>
+    getEqualPreviewWidth(Math.max(0, window.innerWidth - 300)),
+  );
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const splitInitialized = useRef(false);
   const editorRef = useRef<MdxEditorHandle>(null);
   const apiMode = getApiMode();
 
@@ -56,6 +66,11 @@ export default function App() {
   useEffect(() => {
     refreshDrafts();
   }, [refreshDrafts]);
+
+  useEffect(() => {
+    document.documentElement.dataset.uiTheme = theme;
+    saveTheme(theme);
+  }, [theme]);
 
   const openDraft = useCallback(async (slug: string) => {
     const draft = await loadDraft(slug);
@@ -168,22 +183,55 @@ export default function App() {
     await refreshDrafts();
   }, [content, refreshDrafts]);
 
-  const handleInsertImage = useCallback(() => {
-    if (!content) return;
-    setImageDialogOpen(true);
-  }, [content]);
-
-  const handleInsertImageConfirm = useCallback(
-    (fields: ShotFields) => {
-      const snippet = buildShotSnippet(fields);
-      editorRef.current?.insertSnippet(snippet);
-    },
-    [],
-  );
-
   const handleInsertComponent = useCallback((id: ComponentId) => {
     editorRef.current?.insertComponent(id);
   }, []);
+
+  const handlePreviewResize = useCallback((deltaX: number) => {
+    const workspaceWidth = workspaceRef.current?.clientWidth ?? window.innerWidth;
+    setPreviewWidth((current) => clampPreviewWidth(current - deltaX, workspaceWidth));
+  }, []);
+
+  const handlePreviewResizeEnd = useCallback(() => {
+    setPreviewWidth((current) => {
+      savePreviewWidth(current);
+      return current;
+    });
+  }, []);
+
+  useEffect(() => {
+    const workspace = workspaceRef.current;
+    if (!workspace) return;
+
+    const applyEqualSplit = () => {
+      if (splitInitialized.current) return;
+      const workspaceWidth = workspace.clientWidth;
+      if (workspaceWidth <= 0) return;
+      setPreviewWidth(getEqualPreviewWidth(workspaceWidth));
+      splitInitialized.current = true;
+    };
+
+    applyEqualSplit();
+    const observer = new ResizeObserver(applyEqualSplit);
+    observer.observe(workspace);
+
+    const onWindowResize = () => {
+      const workspaceWidth = workspace.clientWidth;
+      if (!splitInitialized.current) {
+        applyEqualSplit();
+        return;
+      }
+      setPreviewWidth((current) => clampPreviewWidth(current, workspaceWidth));
+    };
+    window.addEventListener('resize', onWindowResize);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', onWindowResize);
+    };
+  }, []);
+
+  const chromeClass = `app-chrome theme-${theme}`;
 
   return (
     <ComponentDragProvider onDrop={handleInsertComponent}>
@@ -201,6 +249,8 @@ export default function App() {
         drafts={drafts}
         activeSlug={activeSlug}
         draftsDir={draftsDir}
+        theme={theme}
+        onThemeChange={setTheme}
         onSelect={openDraft}
         onNew={handleNew}
         onImport={handleImport}
@@ -208,6 +258,8 @@ export default function App() {
         onInsertComponent={content ? handleInsertComponent : undefined}
       />
 
+      <div ref={workspaceRef} className="workspace">
+      <div className={`editor-workspace ${chromeClass}`}>
       <main className="editor-pane">
         {!content ? (
           <div className="empty-state">
@@ -229,13 +281,12 @@ export default function App() {
               </button>
             </div>
             <div className="editor-content">
-              <FrontmatterForm meta={content.meta} onChange={updateMeta} />
+              <FrontmatterForm meta={content.meta} body={content.body} onChange={updateMeta} />
               <MdxEditorPane
                 ref={editorRef}
                 key={content.meta.slug}
                 body={content.body}
                 onChange={updateBody}
-                onInsertImage={handleInsertImage}
               />
               <CrescendoForm meta={content.meta} onChange={updateMeta} />
             </div>
@@ -246,7 +297,10 @@ export default function App() {
         )}
       </main>
 
-      <aside className="preview-pane">
+      <ResizeDivider onResize={handlePreviewResize} onResizeEnd={handlePreviewResizeEnd} />
+      </div>
+
+      <aside className="preview-pane" style={{ width: previewWidth }}>
         {content ? (
           <ArticlePreview meta={content.meta} body={content.body} />
         ) : (
@@ -255,15 +309,8 @@ export default function App() {
           </div>
         )}
       </aside>
+      </div>
 
-      {content && (
-        <InsertImageDialog
-          slug={content.meta.slug}
-          open={imageDialogOpen}
-          onClose={() => setImageDialogOpen(false)}
-          onInsert={handleInsertImageConfirm}
-        />
-      )}
     </div>
     </ComponentDragProvider>
   );

@@ -16,7 +16,17 @@
   --radius-md: 0.5rem;
   --shadow-lg: 0 18px 40px -28px rgba(0, 0, 0, 0.4);
 
-  /* App chrome */
+  /* Preview pane — fixed article context, never follows editor theme */
+  --preview-bg: #f6f4ef;
+  --preview-header-bg: #ffffff;
+  --preview-header-text: #6b7075;
+  --preview-border: #e7e8ea;
+  --preview-text: #17181a;
+  --preview-text-muted: #6b7075;
+}
+
+.app-chrome.theme-dark {
+  color-scheme: dark;
   --app-bg: #1a1a1c;
   --app-surface: #242428;
   --app-surface-raised: #2e2e33;
@@ -24,4 +34,38 @@
   --app-text: #f0f0f2;
   --app-text-muted: #9a9aa3;
   --app-accent: var(--color-brand-500);
+  --app-hover: #38383f;
+  --app-mdx-bg: #1e1e22;
+  --app-mdx-text: #f0f0f2;
+  --app-mdx-toolbar-bg: #242428;
+  --app-mdx-toolbar-border: #3a3a40;
+  --app-jsx-bg: #2a2a30;
+  --app-jsx-border: #3a3a40;
+  --app-jsx-label: #9a9aa3;
+  --app-jsx-input-bg: #1e1e22;
+  --app-jsx-input-text: #f0f0f2;
+}
+
+.app-chrome.theme-light {
+  color-scheme: light;
+  --app-bg: #eef0f2;
+  --app-surface: #ffffff;
+  --app-surface-raised: #f3f4f6;
+  --app-border: #d8dce0;
+  --app-text: #17181a;
+  --app-text-muted: #6b7075;
+  --app-accent: var(--color-brand-500);
+  --app-hover: #e7e8ea;
+  --app-mdx-bg: #ffffff;
+  --app-mdx-text: #17181a;
+  --app-mdx-toolbar-bg: #f8f9fa;
+  --app-mdx-toolbar-border: #e7e8ea;
+  --app-jsx-bg: #f0ede6;
+  --app-jsx-border: #d4cfc4;
+  --app-jsx-label: #5c5a54;
+  --app-jsx-input-bg: #ffffff;
+  --app-jsx-input-text: #17181a;
+  --app-component-bg: #e2e6ea;
+  --app-component-border: #c8ced4;
+  --app-component-hover: #d4d9df;
 }

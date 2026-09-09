@@ -53,21 +53,144 @@ pub struct DraftMeta {
     pub updated_date: Option<String>,
     #[serde(default)]
     pub draft: bool,
-    #[serde(default = "default_author")]
+    #[serde(default = "default_byline_author")]
     pub author: String,
+    #[serde(default = "default_company")]
+    pub company: String,
+    #[serde(default = "default_location")]
+    pub location: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub category: Option<String>,
     #[serde(default)]
     pub tags: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crescendo_eyebrow: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub crescendo_heading: Option<String>,
     #[serde(default)]
     pub crescendo_body: Vec<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crescendo_book_title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crescendo_book_subtitle: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crescendo_primary_cta_label: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crescendo_primary_cta_href: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crescendo_primary_cta_new_tab: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crescendo_secondary_cta_label: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crescendo_secondary_cta_href: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub crescendo_secondary_cta_new_tab: Option<bool>,
     pub last_edited: String,
 }
 
-fn default_author() -> String {
+fn default_byline_author() -> String {
+    "Bennie Warshaw".to_string()
+}
+
+fn default_company() -> String {
     "WEBPRO International Inc.".to_string()
+}
+
+fn default_location() -> String {
+    "Savannah, GA".to_string()
+}
+
+const DEFAULT_EYEBROW: &str = "A WEBPRO White Paper / SEO Scientific";
+
+const DEFAULT_DEK: &str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor.";
+
+const DEFAULT_CRESCENDO_EYEBROW: &str = "The bigger picture";
+const DEFAULT_CRESCENDO_BOOK_TITLE: &str = "Scroogled.";
+const DEFAULT_CRESCENDO_BOOK_SUBTITLE: &str =
+    "SEO Survival. How Google Killed the Internet, and How You Can Win.";
+const DEFAULT_CRESCENDO_PRIMARY_CTA_LABEL: &str = "Visit scroogled.io";
+const DEFAULT_CRESCENDO_PRIMARY_CTA_HREF: &str = "https://scroogled.io";
+const DEFAULT_CRESCENDO_SECONDARY_CTA_LABEL: &str = "Read it on Amazon";
+const DEFAULT_CRESCENDO_SECONDARY_CTA_HREF: &str = "https://www.amazon.com";
+
+fn default_dek() -> String {
+    DEFAULT_DEK.to_string()
+}
+
+fn default_crescendo_eyebrow() -> Option<String> {
+    Some(DEFAULT_CRESCENDO_EYEBROW.to_string())
+}
+
+fn default_crescendo_book_title() -> Option<String> {
+    Some(DEFAULT_CRESCENDO_BOOK_TITLE.to_string())
+}
+
+fn default_crescendo_book_subtitle() -> Option<String> {
+    Some(DEFAULT_CRESCENDO_BOOK_SUBTITLE.to_string())
+}
+
+fn default_crescendo_primary_cta_label() -> Option<String> {
+    Some(DEFAULT_CRESCENDO_PRIMARY_CTA_LABEL.to_string())
+}
+
+fn default_crescendo_primary_cta_href() -> Option<String> {
+    Some(DEFAULT_CRESCENDO_PRIMARY_CTA_HREF.to_string())
+}
+
+fn default_crescendo_primary_cta_new_tab() -> Option<bool> {
+    Some(true)
+}
+
+fn default_crescendo_secondary_cta_label() -> Option<String> {
+    Some(DEFAULT_CRESCENDO_SECONDARY_CTA_LABEL.to_string())
+}
+
+fn default_crescendo_secondary_cta_href() -> Option<String> {
+    Some(DEFAULT_CRESCENDO_SECONDARY_CTA_HREF.to_string())
+}
+
+fn default_crescendo_secondary_cta_new_tab() -> Option<bool> {
+    Some(true)
+}
+
+fn default_eyebrow() -> Option<String> {
+    Some(DEFAULT_EYEBROW.to_string())
+}
+
+fn effective_eyebrow(meta: &DraftMeta) -> &str {
+    meta.eyebrow
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(DEFAULT_EYEBROW)
+}
+
+fn years_since_founded() -> i32 {
+    use chrono::{Datelike, NaiveDate};
+    let now = Utc::now().date_naive();
+    let founding = NaiveDate::from_ymd_opt(1994, 11, 1).unwrap_or(now);
+    let mut years = now.year() - founding.year();
+    if (now.month(), now.day()) < (founding.month(), founding.day()) {
+        years -= 1;
+    }
+    years
+}
+
+fn build_byline(meta: &DraftMeta) -> String {
+    if let Some(byline) = &meta.byline {
+        let trimmed = byline.trim();
+        if !trimmed.is_empty() {
+            return trimmed.to_string();
+        }
+    }
+
+    format!(
+        "{} / {} / {} Years in Organic Search / {}",
+        meta.author.trim(),
+        meta.company.trim(),
+        years_since_founded(),
+        meta.location.trim()
+    )
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -226,18 +349,29 @@ fn create_draft(app: tauri::AppHandle, title: String, slug: Option<String>) -> R
     let meta = DraftMeta {
         slug: slug.clone(),
         title: title.clone(),
-        dek: String::new(),
+        dek: default_dek(),
         description: None,
-        eyebrow: None,
+        eyebrow: default_eyebrow(),
         byline: None,
         publish_date: today,
         updated_date: None,
-        draft: true,
-        author: default_author(),
+        draft: false,
+        author: default_byline_author(),
+        company: default_company(),
+        location: default_location(),
         category: None,
         tags: vec![],
+        crescendo_eyebrow: default_crescendo_eyebrow(),
         crescendo_heading: None,
         crescendo_body: vec![],
+        crescendo_book_title: default_crescendo_book_title(),
+        crescendo_book_subtitle: default_crescendo_book_subtitle(),
+        crescendo_primary_cta_label: default_crescendo_primary_cta_label(),
+        crescendo_primary_cta_href: default_crescendo_primary_cta_href(),
+        crescendo_primary_cta_new_tab: default_crescendo_primary_cta_new_tab(),
+        crescendo_secondary_cta_label: default_crescendo_secondary_cta_label(),
+        crescendo_secondary_cta_href: default_crescendo_secondary_cta_href(),
+        crescendo_secondary_cta_new_tab: default_crescendo_secondary_cta_new_tab(),
         last_edited: now_iso(),
     };
 
@@ -306,19 +440,15 @@ fn build_frontmatter(meta: &DraftMeta) -> String {
     if let Some(v) = &meta.description {
         lines.push(format!("description: {}", yaml_escape(v)));
     }
-    if let Some(v) = &meta.eyebrow {
-        lines.push(format!("eyebrow: {}", yaml_escape(v)));
-    }
-    if let Some(v) = &meta.byline {
-        lines.push(format!("byline: {}", yaml_escape(v)));
-    }
+    lines.push(format!("eyebrow: {}", yaml_escape(effective_eyebrow(meta))));
+    lines.push(format!("byline: {}", yaml_escape(&build_byline(meta))));
     if let Some(v) = &meta.updated_date {
         lines.push(format!("updatedDate: {}", v));
     }
     if meta.draft {
         lines.push("draft: true".to_string());
     }
-    lines.push(format!("author: {}", yaml_escape(&meta.author)));
+    lines.push(format!("author: {}", yaml_escape(&meta.company)));
     if let Some(v) = &meta.category {
         lines.push(format!("category: {}", yaml_escape(v)));
     }
@@ -331,6 +461,9 @@ fn build_frontmatter(meta: &DraftMeta) -> String {
             .join(", ");
         lines.push(format!("tags: [{}]", tags));
     }
+    if let Some(v) = &meta.crescendo_eyebrow {
+        lines.push(format!("crescendoEyebrow: {}", yaml_escape(v)));
+    }
     if let Some(v) = &meta.crescendo_heading {
         lines.push(format!("crescendoHeading: {}", yaml_escape(v)));
     }
@@ -339,6 +472,30 @@ fn build_frontmatter(meta: &DraftMeta) -> String {
         for para in &meta.crescendo_body {
             lines.push(format!("  - {}", yaml_escape(para)));
         }
+    }
+    if let Some(v) = &meta.crescendo_book_title {
+        lines.push(format!("crescendoBookTitle: {}", yaml_escape(v)));
+    }
+    if let Some(v) = &meta.crescendo_book_subtitle {
+        lines.push(format!("crescendoBookSubtitle: {}", yaml_escape(v)));
+    }
+    if let Some(v) = &meta.crescendo_primary_cta_label {
+        lines.push(format!("crescendoPrimaryCtaLabel: {}", yaml_escape(v)));
+    }
+    if let Some(v) = &meta.crescendo_primary_cta_href {
+        lines.push(format!("crescendoPrimaryCtaHref: {}", yaml_escape(v)));
+    }
+    if meta.crescendo_primary_cta_new_tab == Some(false) {
+        lines.push("crescendoPrimaryCtaNewTab: false".to_string());
+    }
+    if let Some(v) = &meta.crescendo_secondary_cta_label {
+        lines.push(format!("crescendoSecondaryCtaLabel: {}", yaml_escape(v)));
+    }
+    if let Some(v) = &meta.crescendo_secondary_cta_href {
+        lines.push(format!("crescendoSecondaryCtaHref: {}", yaml_escape(v)));
+    }
+    if meta.crescendo_secondary_cta_new_tab == Some(false) {
+        lines.push("crescendoSecondaryCtaNewTab: false".to_string());
     }
 
     lines.push("---".to_string());
@@ -464,11 +621,22 @@ fn parse_frontmatter(raw: &str) -> Result<(DraftMeta, String), String> {
         publish_date: Utc::now().format("%Y-%m-%d").to_string(),
         updated_date: None,
         draft: false,
-        author: default_author(),
+        author: default_byline_author(),
+        company: default_company(),
+        location: default_location(),
         category: None,
         tags: vec![],
+        crescendo_eyebrow: None,
         crescendo_heading: None,
         crescendo_body: vec![],
+        crescendo_book_title: None,
+        crescendo_book_subtitle: None,
+        crescendo_primary_cta_label: None,
+        crescendo_primary_cta_href: None,
+        crescendo_primary_cta_new_tab: None,
+        crescendo_secondary_cta_label: None,
+        crescendo_secondary_cta_href: None,
+        crescendo_secondary_cta_new_tab: None,
         last_edited: now_iso(),
     };
 
@@ -497,7 +665,9 @@ fn parse_frontmatter(raw: &str) -> Result<(DraftMeta, String), String> {
                 "publishDate" => meta.publish_date = unquote_yaml(val),
                 "updatedDate" => meta.updated_date = Some(unquote_yaml(val)),
                 "draft" => meta.draft = val == "true",
-                "author" => meta.author = unquote_yaml(val),
+                "author" => meta.company = unquote_yaml(val),
+                "company" => meta.company = unquote_yaml(val),
+                "location" => meta.location = unquote_yaml(val),
                 "category" => meta.category = Some(unquote_yaml(val)),
                 "tags" => {
                     let inner = val.trim_start_matches('[').trim_end_matches(']');
@@ -507,7 +677,26 @@ fn parse_frontmatter(raw: &str) -> Result<(DraftMeta, String), String> {
                         .filter(|t| !t.is_empty())
                         .collect();
                 }
+                "crescendoEyebrow" => meta.crescendo_eyebrow = Some(unquote_yaml(val)),
                 "crescendoHeading" => meta.crescendo_heading = Some(unquote_yaml(val)),
+                "crescendoBookTitle" => meta.crescendo_book_title = Some(unquote_yaml(val)),
+                "crescendoBookSubtitle" => meta.crescendo_book_subtitle = Some(unquote_yaml(val)),
+                "crescendoPrimaryCtaLabel" => {
+                    meta.crescendo_primary_cta_label = Some(unquote_yaml(val))
+                }
+                "crescendoPrimaryCtaHref" => meta.crescendo_primary_cta_href = Some(unquote_yaml(val)),
+                "crescendoPrimaryCtaNewTab" => {
+                    meta.crescendo_primary_cta_new_tab = Some(val == "true")
+                }
+                "crescendoSecondaryCtaLabel" => {
+                    meta.crescendo_secondary_cta_label = Some(unquote_yaml(val))
+                }
+                "crescendoSecondaryCtaHref" => {
+                    meta.crescendo_secondary_cta_href = Some(unquote_yaml(val))
+                }
+                "crescendoSecondaryCtaNewTab" => {
+                    meta.crescendo_secondary_cta_new_tab = Some(val == "true")
+                }
                 "crescendoBody" => {
                     in_crescendo = true;
                     if let Some(para) = val.strip_prefix("- ") {

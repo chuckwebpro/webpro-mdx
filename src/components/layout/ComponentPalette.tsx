@@ -14,7 +14,7 @@ export function ComponentPalette({ disabled, onInsert }: Props) {
     <div className="component-palette">
       <div className="component-palette-header">
         <h2>Components</h2>
-        <p>Drag the ⠿ grip into the article body</p>
+        <p>Drag into the article body</p>
       </div>
 
       {groups.map((group) => {
@@ -28,21 +28,19 @@ export function ComponentPalette({ disabled, onInsert }: Props) {
                 <li key={item.id}>
                   <div
                     className={`component-chip${disabled ? ' disabled' : ''}`}
+                    onPointerDown={(e) => {
+                      if (disabled) return;
+                      startDrag(item.id, item.label, e);
+                    }}
                     onDoubleClick={() => !disabled && onInsert?.(item.id)}
                     title={
                       disabled
                         ? 'Select an article first'
-                        : `${item.description}. Drag grip or double-click to insert.`
+                        : `${item.description}. Drag or double-click to insert.`
                     }
+                    aria-label={`Drag ${item.label} into article`}
                   >
-                    <span
-                      className="component-chip-grip"
-                      aria-label={`Drag ${item.label} into article`}
-                      onPointerDown={(e) => {
-                        if (disabled) return;
-                        startDrag(item.id, item.label, e);
-                      }}
-                    >
+                    <span className="component-chip-grip" aria-hidden="true">
                       ⠿
                     </span>
                     <span className="component-chip-label">{item.label}</span>

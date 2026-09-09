@@ -6,6 +6,22 @@ import type {
   DraftMeta,
   ExportResult,
 } from './types';
+import { buildByline } from './byline';
+import {
+  DEFAULT_BYLINE_AUTHOR,
+  DEFAULT_BYLINE_COMPANY,
+  DEFAULT_BYLINE_LOCATION,
+  DEFAULT_CRESCENDO_BOOK_SUBTITLE,
+  DEFAULT_CRESCENDO_BOOK_TITLE,
+  DEFAULT_CRESCENDO_EYEBROW,
+  DEFAULT_CRESCENDO_PRIMARY_CTA_HREF,
+  DEFAULT_CRESCENDO_PRIMARY_CTA_LABEL,
+  DEFAULT_CRESCENDO_SECONDARY_CTA_HREF,
+  DEFAULT_CRESCENDO_SECONDARY_CTA_LABEL,
+  DEFAULT_DEK,
+  DEFAULT_EYEBROW,
+  effectiveEyebrow,
+} from './types';
 import { slugify, todayIsoDate } from './utils';
 
 const STORAGE_KEY = 'webpro-mdx-drafts';
@@ -65,12 +81,24 @@ export const browserApi = {
     const meta: DraftMeta = {
       slug: finalSlug,
       title,
-      dek: '',
+      dek: DEFAULT_DEK,
+      eyebrow: DEFAULT_EYEBROW,
       publishDate: todayIsoDate(),
-      draft: true,
-      author: 'WEBPRO International Inc.',
+      draft: false,
+      author: DEFAULT_BYLINE_AUTHOR,
+      company: DEFAULT_BYLINE_COMPANY,
+      location: DEFAULT_BYLINE_LOCATION,
       tags: [],
+      crescendoEyebrow: DEFAULT_CRESCENDO_EYEBROW,
       crescendoBody: [],
+      crescendoBookTitle: DEFAULT_CRESCENDO_BOOK_TITLE,
+      crescendoBookSubtitle: DEFAULT_CRESCENDO_BOOK_SUBTITLE,
+      crescendoPrimaryCtaLabel: DEFAULT_CRESCENDO_PRIMARY_CTA_LABEL,
+      crescendoPrimaryCtaHref: DEFAULT_CRESCENDO_PRIMARY_CTA_HREF,
+      crescendoPrimaryCtaNewTab: true,
+      crescendoSecondaryCtaLabel: DEFAULT_CRESCENDO_SECONDARY_CTA_LABEL,
+      crescendoSecondaryCtaHref: DEFAULT_CRESCENDO_SECONDARY_CTA_HREF,
+      crescendoSecondaryCtaNewTab: true,
       lastEdited: nowIso(),
     };
     const draft: DraftContent = { meta, body: '' };
@@ -154,17 +182,40 @@ function buildFrontmatter(meta: DraftMeta): string {
     `publishDate: ${meta.publishDate}`,
   ];
   if (meta.description) lines.push(`description: ${JSON.stringify(meta.description)}`);
-  if (meta.eyebrow) lines.push(`eyebrow: ${JSON.stringify(meta.eyebrow)}`);
-  if (meta.byline) lines.push(`byline: ${JSON.stringify(meta.byline)}`);
+  lines.push(`eyebrow: ${JSON.stringify(effectiveEyebrow(meta))}`);
+  lines.push(`byline: ${JSON.stringify(buildByline(meta))}`);
   if (meta.updatedDate) lines.push(`updatedDate: ${meta.updatedDate}`);
   if (meta.draft) lines.push('draft: true');
-  lines.push(`author: ${JSON.stringify(meta.author)}`);
+  lines.push(`author: ${JSON.stringify(meta.company || DEFAULT_BYLINE_COMPANY)}`);
   if (meta.category) lines.push(`category: ${JSON.stringify(meta.category)}`);
   if (meta.tags.length) lines.push(`tags: [${meta.tags.map((t) => JSON.stringify(t)).join(', ')}]`);
+  if (meta.crescendoEyebrow) lines.push(`crescendoEyebrow: ${JSON.stringify(meta.crescendoEyebrow)}`);
   if (meta.crescendoHeading) lines.push(`crescendoHeading: ${JSON.stringify(meta.crescendoHeading)}`);
   if (meta.crescendoBody.length) {
     lines.push('crescendoBody:');
     meta.crescendoBody.forEach((p) => lines.push(`  - ${JSON.stringify(p)}`));
+  }
+  if (meta.crescendoBookTitle) lines.push(`crescendoBookTitle: ${JSON.stringify(meta.crescendoBookTitle)}`);
+  if (meta.crescendoBookSubtitle) {
+    lines.push(`crescendoBookSubtitle: ${JSON.stringify(meta.crescendoBookSubtitle)}`);
+  }
+  if (meta.crescendoPrimaryCtaLabel) {
+    lines.push(`crescendoPrimaryCtaLabel: ${JSON.stringify(meta.crescendoPrimaryCtaLabel)}`);
+  }
+  if (meta.crescendoPrimaryCtaHref) {
+    lines.push(`crescendoPrimaryCtaHref: ${JSON.stringify(meta.crescendoPrimaryCtaHref)}`);
+  }
+  if (meta.crescendoPrimaryCtaNewTab === false) {
+    lines.push('crescendoPrimaryCtaNewTab: false');
+  }
+  if (meta.crescendoSecondaryCtaLabel) {
+    lines.push(`crescendoSecondaryCtaLabel: ${JSON.stringify(meta.crescendoSecondaryCtaLabel)}`);
+  }
+  if (meta.crescendoSecondaryCtaHref) {
+    lines.push(`crescendoSecondaryCtaHref: ${JSON.stringify(meta.crescendoSecondaryCtaHref)}`);
+  }
+  if (meta.crescendoSecondaryCtaNewTab === false) {
+    lines.push('crescendoSecondaryCtaNewTab: false');
   }
   lines.push('---');
   return lines.join('\n');

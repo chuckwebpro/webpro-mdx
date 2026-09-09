@@ -1,12 +1,16 @@
 import type { DraftSummary } from '../../lib/types';
 import { formatDate } from '../../lib/utils';
+import type { Theme } from '../../lib/theme';
 import { ComponentPalette } from './ComponentPalette';
+import { ThemeSwitch } from './ThemeSwitch';
 import type { ComponentId } from '../../lib/components';
 
 interface Props {
   drafts: DraftSummary[];
   activeSlug: string | null;
   draftsDir: string;
+  theme: Theme;
+  onThemeChange: (theme: Theme) => void;
   onSelect: (slug: string) => void;
   onNew: () => void;
   onImport: () => void;
@@ -18,6 +22,8 @@ export function Sidebar({
   drafts,
   activeSlug,
   draftsDir,
+  theme,
+  onThemeChange,
   onSelect,
   onNew,
   onImport,
@@ -27,10 +33,15 @@ export function Sidebar({
   const hasArticle = Boolean(activeSlug);
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar app-chrome theme-${theme}`}>
       <div className="sidebar-header">
-        <h1>Webpro MDX Editor</h1>
-        <p>SEO Insights articles</p>
+        <div className="sidebar-header-top">
+          <div className="sidebar-header-copy">
+            <h1>Webpro MDX Editor</h1>
+            <p>SEO Insights articles</p>
+          </div>
+          <ThemeSwitch theme={theme} onChange={onThemeChange} />
+        </div>
       </div>
 
       <div className="sidebar-actions">

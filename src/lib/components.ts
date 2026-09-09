@@ -11,9 +11,6 @@ export const COMPONENT_TEMPLATES = {
   Verdict: `<Verdict>
   Your truth statement here.
 </Verdict>`,
-  VerdictLabeled: `<Verdict label="Bottom Line">
-  Your truth statement here.
-</Verdict>`,
   PullQuote: `<PullQuote>
   A memorable one- or two-sentence pull quote.
 </PullQuote>`,
@@ -28,7 +25,7 @@ export const COMPONENT_TEMPLATES = {
 </Specimen>`,
   Shot: `<Shot
   src="/images/seo-insights/screenshot.png"
-  alt="Describe the screenshot"
+  alt="Describe the image"
   rank={3}
   caption="Optional caption."
 />`,
@@ -58,17 +55,26 @@ export const COMPONENT_TEMPLATES = {
 
 export const COMPONENT_CATALOG: ComponentCatalogItem[] = [
   { id: 'Verdict', label: 'Verdict', description: 'Truth callout box', group: 'Callouts' },
-  { id: 'VerdictLabeled', label: 'Verdict (labeled)', description: 'Custom label callout', group: 'Callouts' },
-  { id: 'PullQuote', label: 'Pull Quote', description: 'Large bordered quote', group: 'Callouts' },
+  { id: 'PullQuote', label: 'Quote', description: 'Large bordered quote', group: 'Callouts' },
   { id: 'Specimen', label: 'Specimen', description: 'Faux notification card', group: 'Callouts' },
   { id: 'SourceNote', label: 'Source Note', description: 'Citation footnote', group: 'Callouts' },
-  { id: 'Shot', label: 'Shot', description: 'Screenshot (URL or file)', group: 'Media' },
+  { id: 'Shot', label: 'Image', description: 'Image with optional caption', group: 'Media' },
   { id: 'RockGrid', label: 'Rock Grid', description: 'Numbered checklist', group: 'Lists' },
   { id: 'CraftGrid', label: 'Craft Grid', description: 'Lettered list', group: 'Lists' },
   { id: 'CodeBlock', label: 'Code Block', description: 'Syntax-colored code', group: 'Other' },
 ];
 
 export const DRAG_MIME = 'application/x-webpro-component';
+
+/** Editor-facing labels for MDX component tag names. */
+export const JSX_COMPONENT_DISPLAY_NAMES: Record<string, string> = {
+  Shot: 'Image',
+  PullQuote: 'Quote',
+};
+
+export function getComponentDisplayName(name: string): string {
+  return JSX_COMPONENT_DISPLAY_NAMES[name] ?? name;
+}
 
 export function getComponentTemplate(id: string): string | undefined {
   return COMPONENT_TEMPLATES[id as ComponentId];

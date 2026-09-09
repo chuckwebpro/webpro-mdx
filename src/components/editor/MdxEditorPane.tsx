@@ -68,8 +68,6 @@ export interface MdxEditorHandle {
 
   insertComponent: (id: ComponentId) => void;
 
-  insertSnippet: (snippet: string) => void;
-
 }
 
 
@@ -80,15 +78,13 @@ interface Props {
 
   onChange: (body: string) => void;
 
-  onInsertImage?: () => void;
-
 }
 
 
 
 export const MdxEditorPane = forwardRef<MdxEditorHandle, Props>(function MdxEditorPane(
 
-  { body, onChange, onInsertImage },
+  { body, onChange },
 
   ref,
 
@@ -172,8 +168,6 @@ export const MdxEditorPane = forwardRef<MdxEditorHandle, Props>(function MdxEdit
 
       insertComponent: insertTemplate,
 
-      insertSnippet: appendMarkdown,
-
     }),
 
     [insertTemplate, appendMarkdown],
@@ -231,16 +225,6 @@ export const MdxEditorPane = forwardRef<MdxEditorHandle, Props>(function MdxEdit
       <div className="body-editor-header">
 
         <h3>5. Article body</h3>
-
-        {onInsertImage && (
-
-          <button type="button" className="btn" onClick={onInsertImage}>
-
-            Insert image
-
-          </button>
-
-        )}
 
       </div>
 

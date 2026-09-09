@@ -1,10 +1,18 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { buildByline, yearsInOrganicSearchLabel } from '../../lib/byline';
 import type { DraftMeta } from '../../lib/types';
-import { CATEGORIES } from '../../lib/types';
+import {
+  CATEGORIES,
+  DEFAULT_BYLINE_AUTHOR,
+  DEFAULT_BYLINE_COMPANY,
+  DEFAULT_BYLINE_LOCATION,
+  DEFAULT_EYEBROW,
+} from '../../lib/types';
 import { slugify, todayIsoDate } from '../../lib/utils';
 
 interface Props {
   meta: DraftMeta;
+  body?: string;
   onChange: (meta: DraftMeta) => void;
 }
 
@@ -17,12 +25,33 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function FrontmatterForm({ meta, onChange }: Props) {
+export function FrontmatterForm({ meta, body = '', onChange }: Props) {
   const [tagInput, setTagInput] = useState('');
 
   const update = (patch: Partial<DraftMeta>) => {
     onChange({ ...meta, ...patch });
   };
+
+  useEffect(() => {
+    if (!meta.eyebrow?.trim()) {
+      update({ eyebrow: DEFAULT_EYEBROW });
+    }
+  }, [meta.slug]);
+
+  useEffect(() => {
+    const patch: Partial<DraftMeta> = {};
+    if (!meta.company?.trim()) patch.company = DEFAULT_BYLINE_COMPANY;
+    if (!meta.location?.trim()) patch.location = DEFAULT_BYLINE_LOCATION;
+    if (!meta.author?.trim()) patch.author = DEFAULT_BYLINE_AUTHOR;
+    if (Object.keys(patch).length > 0) {
+      update(patch);
+    }
+  }, [meta.slug]);
+
+  const bylinePreview = useMemo(
+    () => buildByline(meta, { includeReadTime: true, body }),
+    [meta, body],
+  );
 
   const addTag = () => {
     const tag = tagInput.trim();
@@ -62,9 +91,8 @@ export function FrontmatterForm({ meta, onChange }: Props) {
           <label htmlFor="eyebrow">Eyebrow</label>
           <input
             id="eyebrow"
-            value={meta.eyebrow ?? ''}
-            onChange={(e) => update({ eyebrow: e.target.value || undefined })}
-            placeholder="A WEBPRO White Paper"
+            value={meta.eyebrow ?? DEFAULT_EYEBROW}
+            onChange={(e) => update({ eyebrow: e.target.value })}
           />
         </div>
       </Section>
@@ -80,22 +108,40 @@ export function FrontmatterForm({ meta, onChange }: Props) {
             placeholder="One- or two-sentence summary in italics beneath the headline."
           />
         </div>
+        <div className="form-row two-col">
+          <div className="form-row">
+            <label htmlFor="byline-author">Author</label>
+            <input
+              id="byline-author"
+              value={meta.author}
+              onChange={(e) => update({ author: e.target.value, byline: undefined })}
+            />
+          </div>
+          <div className="form-row">
+            <label htmlFor="byline-company">Company</label>
+            <input
+              id="byline-company"
+              value={meta.company ?? DEFAULT_BYLINE_COMPANY}
+              onChange={(e) => update({ company: e.target.value, byline: undefined })}
+            />
+          </div>
+        </div>
         <div className="form-row">
-          <label htmlFor="byline">Byline</label>
+          <label htmlFor="byline-location">Location</label>
           <input
-            id="byline"
-            value={meta.byline ?? ''}
-            onChange={(e) => update({ byline: e.target.value || undefined })}
-            placeholder="WEBPRO International Inc. / 31 Years in Organic Search / Savannah, GA"
+            id="byline-location"
+            value={meta.location ?? DEFAULT_BYLINE_LOCATION}
+            onChange={(e) => update({ location: e.target.value, byline: undefined })}
+            placeholder="Savannah, GA"
           />
         </div>
         <div className="form-row">
-          <label htmlFor="author">Author</label>
-          <input
-            id="author"
-            value={meta.author}
-            onChange={(e) => update({ author: e.target.value })}
-          />
+          <label>Years in organic search</label>
+          <p className="field-hint field-hint-static">{yearsInOrganicSearchLabel()} (from Nov 1, 1994)</p>
+        </div>
+        <div className="form-row">
+          <label>Byline preview</label>
+          <p className="byline-preview">{bylinePreview}</p>
         </div>
       </Section>
 

@@ -4,6 +4,7 @@ import {
   useMdastNodeUpdater,
   type JsxEditorProps,
 } from '@mdxeditor/editor';
+import { getComponentDisplayName } from '../../lib/components';
 import { InlinePropertyEditor } from './InlinePropertyEditor';
 
 function isExpressionValue(
@@ -95,15 +96,18 @@ export function InlinePropsJsxEditor({ mdastNode, descriptor }: JsxEditorProps) 
   const showNameOnly =
     descriptor.props.length === 0 && descriptor.hasChildren && descriptor.kind === 'flow';
 
+  const componentName = mdastNode.name ?? '';
+  const displayName = getComponentDisplayName(componentName);
+
   return (
     <div className={descriptor.kind === 'text' ? 'jsx-inline-block' : 'jsx-block-editor'}>
       {showNameOnly && (
-        <span className="jsx-component-name">{mdastNode.name ?? 'Fragment'}</span>
+        <span className="jsx-component-name">{displayName || 'Fragment'}</span>
       )}
       {descriptor.props.length > 0 && (
         <InlinePropertyEditor
           properties={properties}
-          title={mdastNode.name ?? ''}
+          title={displayName}
           onChange={onChange}
         />
       )}
@@ -117,7 +121,7 @@ export function InlinePropsJsxEditor({ mdastNode, descriptor }: JsxEditorProps) 
         />
       ) : (
         !descriptor.props.length && (
-          <span className="jsx-component-name">{mdastNode.name}</span>
+          <span className="jsx-component-name">{displayName}</span>
         )
       )}
     </div>
