@@ -35,15 +35,6 @@
   --app-text-muted: #9a9aa3;
   --app-accent: var(--color-brand-500);
   --app-hover: #38383f;
-  --app-mdx-bg: #1e1e22;
-  --app-mdx-text: #f0f0f2;
-  --app-mdx-toolbar-bg: #242428;
-  --app-mdx-toolbar-border: #3a3a40;
-  --app-jsx-bg: #2a2a30;
-  --app-jsx-border: #3a3a40;
-  --app-jsx-label: #9a9aa3;
-  --app-jsx-input-bg: #1e1e22;
-  --app-jsx-input-text: #f0f0f2;
 }
 
 .app-chrome.theme-light {
@@ -56,15 +47,6 @@
   --app-text-muted: #6b7075;
   --app-accent: var(--color-brand-500);
   --app-hover: #e7e8ea;
-  --app-mdx-bg: #ffffff;
-  --app-mdx-text: #17181a;
-  --app-mdx-toolbar-bg: #f8f9fa;
-  --app-mdx-toolbar-border: #e7e8ea;
-  --app-jsx-bg: #f0ede6;
-  --app-jsx-border: #d4cfc4;
-  --app-jsx-label: #5c5a54;
-  --app-jsx-input-bg: #ffffff;
-  --app-jsx-input-text: #17181a;
   --app-component-bg: #e2e6ea;
   --app-component-border: #c8ced4;
   --app-component-hover: #d4d9df;

@@ -665,6 +665,7 @@ body.component-drag-active {
   border-radius: 6px;
   overflow: hidden;
   min-height: 420px;
+  color-scheme: light;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -690,28 +691,18 @@ body.component-drag-active {
   letter-spacing: 0.04em;
 }
 
-.app-chrome .mdx-editor-wrap .mdxeditor {
-  background: var(--app-mdx-bg);
-  color: var(--app-mdx-text);
+.mdx-editor-wrap .mdxeditor {
+  background: #fff;
+  color: #17181a;
   min-height: 420px;
-}
-
-.app-chrome .mdx-editor-wrap .mdxeditor-toolbar {
-  background: var(--app-mdx-toolbar-bg);
-  border-bottom: 1px solid var(--app-mdx-toolbar-border);
-}
-
-.app-chrome .mdx-editor-wrap .mdxeditor-toolbar button,
-.app-chrome .mdx-editor-wrap .mdxeditor-toolbar select {
-  color: var(--app-mdx-text);
 }
 
 /* Inline JSX component property fields in MDXEditor */
 .jsx-inline-props {
   margin-bottom: 0.5rem;
   padding: 0.5rem 0.65rem;
-  background: var(--app-jsx-bg);
-  border: 1px solid var(--app-jsx-border);
+  background: #f0ede6;
+  border: 1px solid #d4cfc4;
   border-radius: 6px;
 }
 
@@ -739,18 +730,18 @@ body.component-drag-active {
 .jsx-inline-prop-label {
   font-size: 0.72rem;
   font-weight: 500;
-  color: var(--app-jsx-label);
+  color: #5c5a54;
   font-family: var(--font-mono, monospace);
 }
 
 .jsx-inline-prop-input {
   width: 100%;
-  background: var(--app-jsx-input-bg);
-  border: 1px solid var(--app-jsx-border);
+  background: #fff;
+  border: 1px solid #d4cfc4;
   border-radius: 4px;
   padding: 0.3rem 0.45rem;
   font-size: 0.82rem;
-  color: var(--app-jsx-input-text);
+  color: #17181a;
 }
 
 .jsx-inline-prop-input:focus {
