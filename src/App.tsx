@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Sidebar } from './components/layout/Sidebar';
+import { SettingsDialog } from './components/layout/SettingsDialog';
+import { ImportWebproDialog } from './components/layout/ImportWebproDialog';
 import { ResizeDivider } from './components/layout/ResizeDivider';
 import { FrontmatterForm } from './components/frontmatter/FrontmatterForm';
 import { CrescendoForm } from './components/frontmatter/CrescendoForm';
 import { EditorErrorBoundary } from './components/editor/EditorErrorBoundary';
 import { MdxEditorPane, type MdxEditorHandle } from './components/editor/MdxEditorPane';
 import { ArticlePreview } from './components/preview/ArticlePreview';
+import { plainTitle } from './lib/html-text';
 import { validateForExport } from './lib/schema';
 import { getApiMode } from './lib/browser-api';
 import type { ComponentId } from './lib/components';
@@ -17,20 +20,22 @@ import {
   savePreviewWidth,
 } from './lib/preview-width';
 import { loadTheme, saveTheme, type Theme } from './lib/theme';
-import type { DraftContent, DraftSummary } from './lib/types';
+import { preparePublishableMdx } from './lib/format-publishable-mdx';
+import type { AppSettings, DraftContent, DraftSummary } from './lib/types';
 import {
   createDraft,
   deleteDraft,
   exportDraft,
+  getGithubTokenConfigured,
   getSettings,
   importMdx,
+  listDraftAssets,
   listDrafts,
   loadDraft,
-  pickDraftsFolder,
   pickExportFolder,
   pickMdxFile,
+  publishDraft,
   saveDraft,
-  setDraftsDir,
   showMessage,
 } from './lib/tauri';
 
@@ -38,7 +43,10 @@ const AUTOSAVE_MS = 2000;
 
 export default function App() {
   const [drafts, setDrafts] = useState<DraftSummary[]>([]);
-  const [draftsDir, setDraftsDirState] = useState('');
+  const [settings, setSettings] = useState<AppSettings | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [importWebproOpen, setImportWebproOpen] = useState(false);
+  const [publishBusy, setPublishBusy] = useState(false);
   const [activeSlug, setActiveSlug] = useState<string | null>(null);
   const [content, setContent] = useState<DraftContent | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -56,9 +64,9 @@ export default function App() {
 
   const refreshDrafts = useCallback(async () => {
     try {
-      const [list, settings] = await Promise.all([listDrafts(), getSettings()]);
+      const [list, nextSettings] = await Promise.all([listDrafts(), getSettings()]);
       setDrafts(list);
-      setDraftsDirState(settings.draftsDir);
+      setSettings(nextSettings);
       setStartupError(null);
     } catch (err) {
       setStartupError(err instanceof Error ? err.message : String(err));
@@ -111,13 +119,26 @@ export default function App() {
     }
   }, [refreshDrafts]);
 
-  const handleSettings = useCallback(async () => {
-    const path = await pickDraftsFolder();
-    if (!path) return;
-    const settings = await setDraftsDir(path);
-    setDraftsDirState(settings.draftsDir);
-    await refreshDrafts();
-  }, [refreshDrafts]);
+  const handleSettings = useCallback(() => {
+    setSettingsOpen(true);
+  }, []);
+
+  const handleImportWebpro = useCallback(() => {
+    setImportWebproOpen(true);
+  }, []);
+
+  const handleWebproImported = useCallback(
+    async (firstSlug: string | null) => {
+      await refreshDrafts();
+      if (firstSlug) {
+        const draft = await loadDraft(firstSlug);
+        setContent(draft);
+        setActiveSlug(firstSlug);
+        setDirty(false);
+      }
+    },
+    [refreshDrafts],
+  );
 
   const scheduleSave = useCallback(
     (next: DraftContent) => {
@@ -168,16 +189,97 @@ export default function App() {
     const folder = await pickExportFolder();
     if (!folder) return;
 
-    // Save first to ensure latest
-    await saveDraft(content);
-    const result = await exportDraft(content.meta.slug, folder);
-    await showMessage(
-      apiMode === 'browser'
-        ? `Downloaded ${content.meta.slug}.mdx to your browser downloads.\n\nFor full export with images, use npm run tauri:dev.`
-        : `Exported to:\n${result.exportDir}\n\n${result.imageCount} image(s) included.\n\nUnzip and follow README.txt for copy instructions.`,
-      { title: 'Export complete' },
-    );
-  }, [content]);
+    try {
+      await saveDraft(content);
+      const assets = apiMode === 'tauri' ? await listDraftAssets(content.meta.slug) : [];
+      const formattedMdx = await preparePublishableMdx(content.meta, content.body, assets);
+      const result = await exportDraft(content.meta.slug, folder, formattedMdx);
+      await showMessage(
+        apiMode === 'browser'
+          ? `Downloaded ${content.meta.slug}.mdx to your browser downloads.\n\nFor full export with images, use npm run tauri:dev.`
+          : `Exported to:\n${result.exportDir}\n\n${result.imageCount} image(s) included.\n\nUnzip and follow README.txt for copy instructions.`,
+        { title: 'Export complete' },
+      );
+    } catch (err) {
+      await showMessage(err instanceof Error ? err.message : String(err), {
+        title: 'Export failed',
+        kind: 'error',
+      });
+    }
+  }, [apiMode, content]);
+
+  const handlePublish = useCallback(async () => {
+    if (!content || apiMode !== 'tauri') return;
+
+    const errors = validateForExport(content.meta);
+    if (errors.length > 0) {
+      await showMessage(errors.join('\n'), { title: 'Cannot publish — fix these first', kind: 'error' });
+      return;
+    }
+
+    const tokenConfigured = await getGithubTokenConfigured();
+    if (!tokenConfigured) {
+      await showMessage(
+        'Add your GitHub personal access token in Settings before publishing.',
+        { title: 'GitHub not configured', kind: 'error' },
+      );
+      setSettingsOpen(true);
+      return;
+    }
+
+    if (content.meta.draft) {
+      const proceed = window.confirm(
+        'This article is marked as a draft. It will be hidden on the live site, but CI will still run after publish. Continue?',
+      );
+      if (!proceed) return;
+    }
+
+    setPublishBusy(true);
+    try {
+      await saveDraft(content);
+      const assets = await listDraftAssets(content.meta.slug);
+      const formattedMdx = await preparePublishableMdx(content.meta, content.body, assets);
+      const target = settings
+        ? `${settings.githubOwner}/${settings.githubRepo} → ${settings.githubBranch}`
+        : 'chuckwebpro/webpro → main';
+      const author = settings?.githubUsername ? `@${settings.githubUsername}` : 'your GitHub account';
+      const defaultMessage = `Publish SEO Insights: ${plainTitle(content.meta.title)}`;
+      const commitMessage = window.prompt(
+        [
+          `Publish ${content.meta.slug}.mdx and ${assets.length} image(s) to ${target}?`,
+          `Publishing as ${author}.`,
+          '',
+          'Commit message:',
+        ].join('\n'),
+        defaultMessage,
+      );
+      if (!commitMessage?.trim()) return;
+
+      const result = await publishDraft({
+        slug: content.meta.slug,
+        formattedMdx,
+        commitMessage: commitMessage.trim(),
+      });
+
+      await showMessage(
+        [
+          `Published as @${result.authorLogin}.`,
+          result.commitUrl,
+          '',
+          `${result.filesPublished.length} file(s) committed.`,
+          'Deploy will run automatically on GitHub if CI passes.',
+        ].join('\n'),
+        { title: 'Publish complete' },
+      );
+    } catch (err) {
+      await showMessage(err instanceof Error ? err.message : String(err), {
+        title: 'Publish failed',
+        kind: 'error',
+      });
+    } finally {
+      setPublishBusy(false);
+    }
+  }, [apiMode, content, settings]);
 
   const handleDelete = useCallback(async () => {
     if (!content) return;
@@ -254,12 +356,14 @@ export default function App() {
       <Sidebar
         drafts={drafts}
         activeSlug={activeSlug}
-        draftsDir={draftsDir}
+        draftsDir={settings?.draftsDir ?? ''}
         theme={theme}
         onThemeChange={setTheme}
         onSelect={openDraft}
         onNew={handleNew}
         onImport={handleImport}
+        onImportWebpro={handleImportWebpro}
+        showImportWebpro={apiMode === 'tauri'}
         onSettings={handleSettings}
         onInsertComponent={content ? handleInsertComponent : undefined}
       />
@@ -271,10 +375,22 @@ export default function App() {
       <main className="editor-pane">
           <>
             <div className="editor-toolbar">
-              <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600 }}>{content.meta.title}</span>
+              <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 600 }}>
+                {plainTitle(content.meta.title)}
+              </span>
               <button type="button" className="btn btn-primary" onClick={handleExport}>
                 Export
               </button>
+              {apiMode === 'tauri' && (
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handlePublish}
+                  disabled={publishBusy}
+                >
+                  {publishBusy ? 'Publishing…' : 'Publish'}
+                </button>
+              )}
               <button type="button" className="btn btn-danger" onClick={handleDelete}>
                 Delete
               </button>
@@ -327,6 +443,31 @@ export default function App() {
       </div>
 
     </div>
+      {settings && (
+        <>
+          <SettingsDialog
+            settings={settings}
+            theme={theme}
+            open={settingsOpen}
+            onClose={() => setSettingsOpen(false)}
+            onSettingsChange={(next) => {
+              setSettings(next);
+              refreshDrafts();
+            }}
+          />
+          <ImportWebproDialog
+            settings={settings}
+            theme={theme}
+            open={importWebproOpen}
+            onClose={() => setImportWebproOpen(false)}
+            onSettingsChange={(next) => {
+              setSettings(next);
+              refreshDrafts();
+            }}
+            onImported={handleWebproImported}
+          />
+        </>
+      )}
     </ComponentDragProvider>
   );
 }

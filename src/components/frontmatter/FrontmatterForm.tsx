@@ -9,7 +9,7 @@ import {
   DEFAULT_BYLINE_LOCATION,
   DEFAULT_EYEBROW,
 } from '../../lib/types';
-import { slugify, todayIsoDate } from '../../lib/utils';
+import { slugify, slugifyPlainTitle, todayIsoDate } from '../../lib/utils';
 
 interface Props {
   meta: DraftMeta;
@@ -66,13 +66,13 @@ export function FrontmatterForm({ meta, body = '', onChange }: Props) {
             value={meta.title}
             onChange={(e) => {
               const title = e.target.value;
-              update({ title, slug: meta.slug || slugify(title) });
+              update({ title, slug: meta.slug || slugifyPlainTitle(title) });
             }}
             placeholder='Wolf. Wolf. Wolf. — or use <span class="accent">word</span>'
           />
         </div>
         <div className="form-row">
-          <label htmlFor="slug">Slug (filename)</label>
+          <label htmlFor="slug">Slug (filename, plain text)</label>
           <input
             id="slug"
             value={meta.slug}

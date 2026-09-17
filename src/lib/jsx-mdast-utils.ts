@@ -193,3 +193,54 @@ export function createChannelRowNode(): RootContent {
     children: [],
   };
 }
+
+type GridCardFlowElement = {
+  type: 'mdxJsxFlowElement';
+  name: 'GridCard';
+  attributes?: unknown[];
+  children?: RootContent[];
+};
+
+export function isGridCardNode(node: unknown): node is GridCardFlowElement {
+  return isMdxJsxFlowElement(node) && node.name === 'GridCard';
+}
+
+function parseGridCardN(node: unknown): number {
+  if (!isGridCardNode(node)) return 0;
+
+  for (const attr of node.attributes ?? []) {
+    if (isMdxJsxAttribute(attr) && attr.name === 'n' && isExpressionValue(attr.value)) {
+      return parseInt(attr.value.value, 10) || 0;
+    }
+  }
+
+  return 0;
+}
+
+export function getNextGridCardNumber(children: RootContent[]): number {
+  let max = 0;
+  for (const child of children) {
+    max = Math.max(max, parseGridCardN(child));
+  }
+  return max + 1;
+}
+
+export function createGridCardNode(n: number): RootContent {
+  return {
+    type: 'mdxJsxFlowElement',
+    name: 'GridCard',
+    attributes: [
+      {
+        type: 'mdxJsxAttribute',
+        name: 'n',
+        value: { type: 'mdxJsxAttributeValueExpression', value: String(n) },
+      },
+      {
+        type: 'mdxJsxAttribute',
+        name: 'title',
+        value: 'New card title',
+      },
+    ],
+    children: [],
+  };
+}

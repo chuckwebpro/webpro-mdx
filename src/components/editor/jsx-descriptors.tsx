@@ -1,9 +1,11 @@
 import { type JsxComponentDescriptor } from '@mdxeditor/editor';
+import { CardGridJsxEditor } from './CardGridJsxEditor';
 import { ChannelRowJsxEditor } from './ChannelRowJsxEditor';
 import { ChannelTableJsxEditor } from './ChannelTableJsxEditor';
 import { ChildrenTextJsxEditor } from './ChildrenTextJsxEditor';
 import { CraftGridJsxEditor } from './CraftGridJsxEditor';
 import { CraftRowJsxEditor } from './CraftRowJsxEditor';
+import { GridCardJsxEditor } from './GridCardJsxEditor';
 import { InlinePropsJsxEditor } from './InlinePropsJsxEditor';
 import { RockGridJsxEditor } from './RockGridJsxEditor';
 import { RockJsxEditor } from './RockJsxEditor';
@@ -92,6 +94,23 @@ export const jsxComponentDescriptors: JsxComponentDescriptor[] = [
     Editor: CraftRowJsxEditor,
   },
   {
+    name: 'CardGrid',
+    kind: 'flow',
+    props: [],
+    hasChildren: true,
+    Editor: CardGridJsxEditor,
+  },
+  {
+    name: 'GridCard',
+    kind: 'flow',
+    props: [
+      { name: 'n', type: 'expression', required: true },
+      { name: 'title', type: 'string', required: true },
+    ],
+    hasChildren: true,
+    Editor: GridCardJsxEditor,
+  },
+  {
     name: 'StatRow',
     kind: 'flow',
     props: [],
@@ -109,6 +128,7 @@ export const jsxComponentDescriptors: JsxComponentDescriptor[] = [
     Editor: StatCardJsxEditor,
   },
   flow('EffortCompare', []),
+  flow('SocialDial', [], false),
   flow('EffortCol', [
     { name: 'variant', type: 'string', required: true },
     { name: 'title', type: 'string', required: true },
@@ -132,4 +152,10 @@ export const jsxComponentDescriptors: JsxComponentDescriptor[] = [
     Editor: ChannelRowJsxEditor,
   },
   flow('SourceNote', []),
+  flow('CtaBlock', [
+    { name: 'tag', type: 'string', required: true },
+    { name: 'heading', type: 'string', required: true },
+    { name: 'href', type: 'string', required: true },
+    { name: 'ctaLabel', type: 'string', required: true },
+  ]),
 ];

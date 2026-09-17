@@ -38,6 +38,14 @@ export const COMPONENT_TEMPLATES = {
   </Rock>
   <Rock n={2} label="Second item title" />
 </RockGrid>`,
+  CardGrid: `<CardGrid>
+  <GridCard n={1} title="First card title">
+    Description paragraph.
+  </GridCard>
+  <GridCard n={2} title="Second card title">
+    Description paragraph.
+  </GridCard>
+</CardGrid>`,
   CraftGrid: `<CraftGrid>
   <CraftRow n="A" label="First discipline">
     Description paragraph.
@@ -50,6 +58,7 @@ export const COMPONENT_TEMPLATES = {
   <StatCard value="94%" label="Of Google clicks go to organic results" />
   <StatCard value="68.7%" label="Top 3 organic results capture" />
 </StatRow>`,
+  SocialDial: `<SocialDial />`,
   EffortCompare: `<EffortCompare>
   <EffortCol
     variant="low"
@@ -85,6 +94,14 @@ export const COMPONENT_TEMPLATES = {
   SourceNote: `<SourceNote>
   Source attribution text.
 </SourceNote>`,
+  CtaBlock: `<CtaBlock
+  tag="Get scored"
+  heading="See where your practice stands"
+  href="/contact"
+  ctaLabel="Request audit"
+>
+  Supporting copy for the CTA goes here.
+</CtaBlock>`,
 } as const;
 
 export const COMPONENT_CATALOG: ComponentCatalogItem[] = [
@@ -93,11 +110,14 @@ export const COMPONENT_CATALOG: ComponentCatalogItem[] = [
   { id: 'ClientQuote', label: 'Client Quote', description: 'Testimonial card with attribution', group: 'Callouts' },
   { id: 'Specimen', label: 'Specimen', description: 'Faux notification card', group: 'Callouts' },
   { id: 'SourceNote', label: 'Source Note', description: 'Citation footnote', group: 'Callouts' },
+  { id: 'CtaBlock', label: 'CTA Block', description: 'End-of-article call to action', group: 'Callouts' },
   { id: 'Shot', label: 'Image', description: 'Image from URL or file upload', group: 'Media' },
   { id: 'RockGrid', label: 'Rock Grid', description: 'Numbered checklist', group: 'Lists' },
+  { id: 'CardGrid', label: 'Card Grid', description: 'Two-column numbered card grid', group: 'Lists' },
   { id: 'CraftGrid', label: 'Craft Grid', description: 'Lettered list', group: 'Lists' },
   { id: 'StatRow', label: 'Stat Row', description: 'Row of stat highlight cards', group: 'Data' },
   { id: 'EffortCompare', label: 'Effort Compare', description: 'Low vs high effort columns', group: 'Data' },
+  { id: 'SocialDial', label: 'Social Dial', description: 'Interactive channel ROI dial', group: 'Data' },
   { id: 'ChannelTable', label: 'Channel Table', description: 'Channel comparison table', group: 'Data' },
   { id: 'CodeBlock', label: 'Code Block', description: 'Syntax-colored terminal block', group: 'Other' },
   { id: 'CodeRewriteLabel', label: 'Code Rewrite Label', description: 'Pill label between code blocks', group: 'Other' },
@@ -109,6 +129,7 @@ export const DRAG_MIME = 'application/x-webpro-component';
 export const JSX_COMPONENT_DISPLAY_NAMES: Record<string, string> = {
   Shot: 'Image',
   PullQuote: 'Quote',
+  CtaBlock: 'CTA Block',
 };
 
 export function getComponentDisplayName(name: string): string {

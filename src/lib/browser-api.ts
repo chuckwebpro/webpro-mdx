@@ -6,17 +6,15 @@ import type {
   DraftMeta,
   ExportResult,
 } from './types';
-import { buildByline } from './byline';
 import {
   DEFAULT_BYLINE_AUTHOR,
   DEFAULT_BYLINE_COMPANY,
   DEFAULT_BYLINE_LOCATION,
   DEFAULT_DEK,
   DEFAULT_EYEBROW,
-  effectiveEyebrow,
 } from './types';
-import { normalizeDraftContent } from './normalize-draft';
-import { slugify, todayIsoDate } from './utils';
+import { normalizeAppSettings, normalizeDraftContent } from './normalize-draft';
+import { slugifyPlainTitle, todayIsoDate } from './utils';
 
 const STORAGE_KEY = 'webpro-mdx-drafts';
 const SETTINGS_KEY = 'webpro-mdx-settings';
@@ -24,6 +22,9 @@ const SETTINGS_KEY = 'webpro-mdx-settings';
 function defaultSettings(): AppSettings {
   return {
     draftsDir: `${navigator.platform.includes('Win') ? 'Documents' : '~'}/WebproArticles (browser mode)`,
+    githubOwner: 'chuckwebpro',
+    githubRepo: 'webpro',
+    githubBranch: 'main',
   };
 }
 
@@ -47,11 +48,11 @@ function nowIso() {
 export const browserApi = {
   async getSettings(): Promise<AppSettings> {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    return raw ? JSON.parse(raw) : defaultSettings();
+    return normalizeAppSettings(raw ? JSON.parse(raw) : defaultSettings());
   },
 
   async setDraftsDir(path: string): Promise<AppSettings> {
-    const settings = { draftsDir: path };
+    const settings = normalizeAppSettings({ ...(await this.getSettings()), draftsDir: path });
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     return settings;
   },
@@ -65,12 +66,15 @@ export const browserApi = {
         draft: d.meta.draft,
         lastEdited: d.meta.lastEdited,
       }))
-      .sort((a, b) => b.lastEdited.localeCompare(a.lastEdited));
+      .sort(
+        (a, b) =>
+          b.publishDate.localeCompare(a.publishDate) || a.slug.localeCompare(b.slug),
+      );
   },
 
   async createDraft(title: string, slug?: string): Promise<DraftContent> {
     const all = loadAll();
-    const finalSlug = slug?.trim() || slugify(title);
+    const finalSlug = slug?.trim() || slugifyPlainTitle(title);
     if (all[finalSlug]) throw new Error(`Draft "${finalSlug}" already exists`);
     const meta: DraftMeta = {
       slug: finalSlug,
@@ -115,12 +119,10 @@ export const browserApi = {
     saveAll(all);
   },
 
-  async exportDraft(slug: string, exportDir: string): Promise<ExportResult> {
+  async exportDraft(slug: string, exportDir: string, formattedMdx: string): Promise<ExportResult> {
     const draft = loadAll()[slug];
     if (!draft) throw new Error(`Draft "${slug}" not found`);
-    // Browser mode: download .mdx file instead of writing to disk
-    const frontmatter = buildFrontmatter(draft.meta);
-    const blob = new Blob([`${frontmatter}\n\n${draft.body}`], { type: 'text/markdown' });
+    const blob = new Blob([formattedMdx], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -158,30 +160,6 @@ export const browserApi = {
     return null;
   },
 };
-
-function buildFrontmatter(meta: DraftMeta): string {
-  const lines = [
-    '---',
-    `title: ${JSON.stringify(meta.title)}`,
-    `dek: ${JSON.stringify(meta.dek)}`,
-    `publishDate: ${meta.publishDate}`,
-  ];
-  if (meta.description) lines.push(`description: ${JSON.stringify(meta.description)}`);
-  lines.push(`eyebrow: ${JSON.stringify(effectiveEyebrow(meta))}`);
-  lines.push(`byline: ${JSON.stringify(buildByline(meta))}`);
-  if (meta.updatedDate) lines.push(`updatedDate: ${meta.updatedDate}`);
-  if (meta.draft) lines.push('draft: true');
-  lines.push(`author: ${JSON.stringify(meta.company || DEFAULT_BYLINE_COMPANY)}`);
-  if (meta.category) lines.push(`category: ${JSON.stringify(meta.category)}`);
-  if (meta.tags.length) lines.push(`tags: [${meta.tags.map((t) => JSON.stringify(t)).join(', ')}]`);
-  if (meta.crescendoHeading) lines.push(`crescendoHeading: ${JSON.stringify(meta.crescendoHeading)}`);
-  if (meta.crescendoBody.length) {
-    lines.push('crescendoBody:');
-    meta.crescendoBody.forEach((p) => lines.push(`  - ${JSON.stringify(p)}`));
-  }
-  lines.push('---');
-  return lines.join('\n');
-}
 
 export function getApiMode(): 'tauri' | 'browser' {
   return isTauri() ? 'tauri' : 'browser';

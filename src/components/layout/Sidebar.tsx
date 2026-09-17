@@ -1,3 +1,4 @@
+import { plainTitle } from '../../lib/html-text';
 import type { DraftSummary } from '../../lib/types';
 import { formatDate } from '../../lib/utils';
 import type { Theme } from '../../lib/theme';
@@ -14,7 +15,9 @@ interface Props {
   onSelect: (slug: string) => void;
   onNew: () => void;
   onImport: () => void;
+  onImportWebpro: () => void;
   onSettings: () => void;
+  showImportWebpro?: boolean;
   onInsertComponent?: (id: ComponentId) => void;
 }
 
@@ -27,7 +30,9 @@ export function Sidebar({
   onSelect,
   onNew,
   onImport,
+  onImportWebpro,
   onSettings,
+  showImportWebpro = false,
   onInsertComponent,
 }: Props) {
   const hasArticle = Boolean(activeSlug);
@@ -51,6 +56,11 @@ export function Sidebar({
         <button type="button" className="btn" onClick={onImport}>
           Import
         </button>
+        {showImportWebpro && (
+          <button type="button" className="btn" onClick={onImportWebpro}>
+            From webpro…
+          </button>
+        )}
         <button type="button" className="btn" onClick={onSettings} title="Drafts folder">
           ⚙
         </button>
@@ -70,7 +80,7 @@ export function Sidebar({
             >
               <div className="draft-item-title">
                 {draft.draft && <span className="draft-badge">Draft</span>}
-                {draft.title || draft.slug}
+                {plainTitle(draft.title) || draft.slug}
               </div>
               <div className="draft-item-meta">
                 {draft.publishDate} · {formatDate(draft.lastEdited)}

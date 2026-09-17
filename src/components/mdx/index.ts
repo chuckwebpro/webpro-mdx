@@ -11,7 +11,10 @@ import { ClientQuote } from './ClientQuote';
 import { CodeRewriteLabel } from './CodeRewriteLabel';
 import { StatRow, StatCard } from './Stat';
 import { EffortCompare, EffortCol } from './EffortCompare';
+import { SocialDial } from './SocialDial';
+import { CtaBlock } from './CtaBlock';
 import { ChannelTable, ChannelRow } from './Channel';
+import { CardGrid, GridCard } from './CardGrid';
 
 export const mdxComponents = {
   Verdict,
@@ -31,8 +34,12 @@ export const mdxComponents = {
   StatCard,
   EffortCompare,
   EffortCol,
+  SocialDial,
+  CtaBlock,
   ChannelTable,
   ChannelRow,
+  CardGrid,
+  GridCard,
 };
 
 export type MdxComponentName = keyof typeof mdxComponents;

@@ -1,5 +1,53 @@
 export interface AppSettings {
   draftsDir: string;
+  githubOwner: string;
+  githubRepo: string;
+  githubBranch: string;
+  githubUsername?: string;
+  webproLocalPath?: string;
+}
+
+export interface WebproArticleSummary {
+  slug: string;
+  title: string;
+  publishDate?: string;
+  alreadyImported: boolean;
+}
+
+export interface ImportWebproFailure {
+  slug: string;
+  error: string;
+}
+
+export interface ImportWebproResult {
+  imported: string[];
+  skipped: string[];
+  failed: ImportWebproFailure[];
+}
+
+export interface GitHubSettingsUpdate {
+  githubOwner: string;
+  githubRepo: string;
+  githubBranch: string;
+}
+
+export interface GitHubConnectionStatus {
+  login: string;
+  canPush: boolean;
+  repoFullName: string;
+}
+
+export interface PublishResult {
+  commitSha: string;
+  commitUrl: string;
+  filesPublished: string[];
+  authorLogin: string;
+}
+
+export interface PublishDraftRequest {
+  slug: string;
+  formattedMdx: string;
+  commitMessage: string;
 }
 
 export interface DraftSummary {

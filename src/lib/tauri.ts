@@ -2,12 +2,16 @@ import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 import { APP_NAME } from './app-info';
 import { browserApi, getApiMode } from './browser-api';
-import { normalizeDraftContent } from './normalize-draft';
+import { normalizeAppSettings, normalizeDraftContent } from './normalize-draft';
 import type {
   AppSettings,
   DraftContent,
   DraftSummary,
   ExportResult,
+  GitHubConnectionStatus,
+  GitHubSettingsUpdate,
+  PublishDraftRequest,
+  PublishResult,
 } from './types';
 
 async function tauri<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -15,13 +19,51 @@ async function tauri<T>(cmd: string, args?: Record<string, unknown>): Promise<T>
 }
 
 export async function getSettings(): Promise<AppSettings> {
-  if (getApiMode() === 'browser') return browserApi.getSettings();
-  return tauri('get_settings');
+  if (getApiMode() === 'browser') return normalizeAppSettings(await browserApi.getSettings());
+  return normalizeAppSettings(await tauri<AppSettings>('get_settings'));
 }
 
 export async function setDraftsDir(path: string): Promise<AppSettings> {
   if (getApiMode() === 'browser') return browserApi.setDraftsDir(path);
   return tauri('set_drafts_dir', { path });
+}
+
+export async function setGithubSettings(update: GitHubSettingsUpdate): Promise<AppSettings> {
+  if (getApiMode() === 'browser') {
+    throw new Error('GitHub publish requires the desktop app (npm run tauri:dev)');
+  }
+  return tauri('set_github_settings', { update });
+}
+
+export async function setGithubToken(token: string): Promise<void> {
+  if (getApiMode() === 'browser') {
+    throw new Error('GitHub publish requires the desktop app (npm run tauri:dev)');
+  }
+  return tauri('set_github_token', { token });
+}
+
+export async function disconnectGithub(): Promise<AppSettings> {
+  if (getApiMode() === 'browser') {
+    throw new Error('GitHub publish requires the desktop app (npm run tauri:dev)');
+  }
+  return tauri('disconnect_github');
+}
+
+export async function getGithubTokenConfigured(): Promise<boolean> {
+  if (getApiMode() === 'browser') return false;
+  return tauri('get_github_token_configured');
+}
+
+export async function testGithubConnection(): Promise<GitHubConnectionStatus> {
+  if (getApiMode() === 'browser') {
+    throw new Error('GitHub publish requires the desktop app (npm run tauri:dev)');
+  }
+  return tauri('test_github_connection');
+}
+
+export async function listDraftAssets(slug: string): Promise<string[]> {
+  if (getApiMode() === 'browser') return [];
+  return tauri('list_draft_assets', { slug });
 }
 
 export async function listDrafts(): Promise<DraftSummary[]> {
@@ -52,9 +94,20 @@ export async function deleteDraft(slug: string): Promise<void> {
   return tauri('delete_draft', { slug });
 }
 
-export async function exportDraft(slug: string, exportDir: string): Promise<ExportResult> {
-  if (getApiMode() === 'browser') return browserApi.exportDraft(slug, exportDir);
-  return tauri('export_draft', { slug, exportDir });
+export async function exportDraft(
+  slug: string,
+  exportDir: string,
+  formattedMdx: string,
+): Promise<ExportResult> {
+  if (getApiMode() === 'browser') return browserApi.exportDraft(slug, exportDir, formattedMdx);
+  return tauri('export_draft', { slug, exportDir, formattedMdx });
+}
+
+export async function publishDraft(request: PublishDraftRequest): Promise<PublishResult> {
+  if (getApiMode() === 'browser') {
+    throw new Error('Publish requires the desktop app (npm run tauri:dev)');
+  }
+  return tauri('publish_draft', { ...request });
 }
 
 export async function importMdx(filePath: string): Promise<DraftContent> {

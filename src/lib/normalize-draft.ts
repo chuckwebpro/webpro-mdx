@@ -1,10 +1,20 @@
-import type { DraftContent, DraftMeta } from './types';
+import type { AppSettings, DraftContent, DraftMeta } from './types';
 import {
   DEFAULT_BYLINE_AUTHOR,
   DEFAULT_BYLINE_COMPANY,
   DEFAULT_BYLINE_LOCATION,
   DEFAULT_DEK,
 } from './types';
+
+export function normalizeAppSettings(settings: AppSettings): AppSettings {
+  return {
+    ...settings,
+    githubOwner: settings.githubOwner?.trim() || 'chuckwebpro',
+    githubRepo: settings.githubRepo?.trim() || 'webpro',
+    githubBranch: settings.githubBranch?.trim() || 'main',
+    webproLocalPath: settings.webproLocalPath?.trim() || undefined,
+  };
+}
 
 export function normalizeDraftMeta(meta: DraftMeta): DraftMeta {
   return {

@@ -1,7 +1,23 @@
+mod credentials;
+mod github;
+mod import_webpro;
+
 use chrono::Utc;
+use credentials::{clear_github_token, has_github_token, load_github_token, save_github_token};
+use github::{
+    fetch_seo_insights_image, fetch_seo_insights_mdx, list_seo_insights_mdx_files,
+    GitHubConnectionStatus, PublishFile, PublishResult,
+};
+use import_webpro::{
+    create_draft_from_webpro_mdx, import_webpro_slugs, list_local_webpro_articles,
+    resolve_webpro_paths, summary_from_mdx, ImageSource, ImportWebproResult, LocalImageSource,
+    MemoryImageSource, WebproArticleSummary,
+};
+use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use tauri::Manager;
 use walkdir::WalkDir;
 use zip::write::SimpleFileOptions;
@@ -9,11 +25,36 @@ use zip::{CompressionMethod, ZipWriter};
 
 const SETTINGS_FILE: &str = "settings.json";
 const DEFAULT_DRAFTS_FOLDER: &str = "WebproArticles";
+const DEFAULT_GITHUB_OWNER: &str = "chuckwebpro";
+const DEFAULT_GITHUB_REPO: &str = "webpro";
+const DEFAULT_GITHUB_BRANCH: &str = "main";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct AppSettings {
     pub drafts_dir: String,
+    #[serde(default = "default_github_owner")]
+    pub github_owner: String,
+    #[serde(default = "default_github_repo")]
+    pub github_repo: String,
+    #[serde(default = "default_github_branch")]
+    pub github_branch: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub github_username: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub webpro_local_path: Option<String>,
+}
+
+fn default_github_owner() -> String {
+    DEFAULT_GITHUB_OWNER.to_string()
+}
+
+fn default_github_repo() -> String {
+    DEFAULT_GITHUB_REPO.to_string()
+}
+
+fn default_github_branch() -> String {
+    DEFAULT_GITHUB_BRANCH.to_string()
 }
 
 impl Default for AppSettings {
@@ -25,6 +66,11 @@ impl Default for AppSettings {
                 .join(DEFAULT_DRAFTS_FOLDER)
                 .to_string_lossy()
                 .into_owned(),
+            github_owner: default_github_owner(),
+            github_repo: default_github_repo(),
+            github_branch: default_github_branch(),
+            github_username: None,
+            webpro_local_path: None,
         }
     }
 }
@@ -95,42 +141,6 @@ fn default_dek() -> String {
 
 fn default_eyebrow() -> Option<String> {
     Some(DEFAULT_EYEBROW.to_string())
-}
-
-fn effective_eyebrow(meta: &DraftMeta) -> &str {
-    meta.eyebrow
-        .as_deref()
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .unwrap_or(DEFAULT_EYEBROW)
-}
-
-fn years_since_founded() -> i32 {
-    use chrono::{Datelike, NaiveDate};
-    let now = Utc::now().date_naive();
-    let founding = NaiveDate::from_ymd_opt(1994, 11, 1).unwrap_or(now);
-    let mut years = now.year() - founding.year();
-    if (now.month(), now.day()) < (founding.month(), founding.day()) {
-        years -= 1;
-    }
-    years
-}
-
-fn build_byline(meta: &DraftMeta) -> String {
-    if let Some(byline) = &meta.byline {
-        let trimmed = byline.trim();
-        if !trimmed.is_empty() {
-            return trimmed.to_string();
-        }
-    }
-
-    format!(
-        "{} / {} / {} Years in Organic Search / {}",
-        meta.author.trim(),
-        meta.company.trim(),
-        years_since_founded(),
-        meta.location.trim()
-    )
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -204,7 +214,28 @@ fn write_meta(path: &Path, meta: &DraftMeta) -> Result<(), String> {
     fs::write(path, raw).map_err(|e| e.to_string())
 }
 
-fn slugify(input: &str) -> String {
+fn strip_html_tags(input: &str) -> String {
+    let mut out = String::new();
+    let mut in_tag = false;
+    for ch in input.chars() {
+        if ch == '<' {
+            in_tag = true;
+        } else if ch == '>' {
+            in_tag = false;
+        } else if !in_tag {
+            if ch.is_whitespace() {
+                if !out.ends_with(' ') && !out.is_empty() {
+                    out.push(' ');
+                }
+            } else {
+                out.push(ch);
+            }
+        }
+    }
+    out.trim().to_string()
+}
+
+fn slugify_ascii(input: &str) -> String {
     let lower = input.to_lowercase();
     let mut slug = String::new();
     let mut last_dash = false;
@@ -220,6 +251,11 @@ fn slugify(input: &str) -> String {
     slug.trim_matches('-').to_string()
 }
 
+/// Slug from a hero title that may include `<span class="accent">` markup.
+fn slugify(input: &str) -> String {
+    slugify_ascii(&strip_html_tags(input))
+}
+
 #[tauri::command]
 fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
     load_settings(&app)
@@ -227,10 +263,155 @@ fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
 
 #[tauri::command]
 fn set_drafts_dir(app: tauri::AppHandle, path: String) -> Result<AppSettings, String> {
-    let settings = AppSettings { drafts_dir: path.clone() };
+    let mut settings = load_settings(&app)?;
+    settings.drafts_dir = path.clone();
     ensure_drafts_dir(Path::new(&path))?;
     save_settings(&app, &settings)?;
     Ok(settings)
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct GitHubSettingsUpdate {
+    pub github_owner: String,
+    pub github_repo: String,
+    pub github_branch: String,
+}
+
+#[tauri::command]
+fn set_github_settings(
+    app: tauri::AppHandle,
+    update: GitHubSettingsUpdate,
+) -> Result<AppSettings, String> {
+    let mut settings = load_settings(&app)?;
+    settings.github_owner = update.github_owner.trim().to_string();
+    settings.github_repo = update.github_repo.trim().to_string();
+    settings.github_branch = update.github_branch.trim().to_string();
+    if settings.github_owner.is_empty() || settings.github_repo.is_empty() || settings.github_branch.is_empty()
+    {
+        return Err("GitHub owner, repo, and branch are required".into());
+    }
+    save_settings(&app, &settings)?;
+    Ok(settings)
+}
+
+#[tauri::command]
+fn set_github_token(token: String) -> Result<(), String> {
+    let trimmed = token.trim();
+    if trimmed.is_empty() {
+        return Err("GitHub token cannot be empty".into());
+    }
+    save_github_token(trimmed)
+}
+
+#[tauri::command]
+fn disconnect_github(app: tauri::AppHandle) -> Result<AppSettings, String> {
+    clear_github_token()?;
+    let mut settings = load_settings(&app)?;
+    settings.github_username = None;
+    save_settings(&app, &settings)?;
+    Ok(settings)
+}
+
+#[tauri::command]
+fn get_github_token_configured() -> Result<bool, String> {
+    has_github_token()
+}
+
+#[tauri::command]
+fn test_github_connection(app: tauri::AppHandle) -> Result<GitHubConnectionStatus, String> {
+    let settings = load_settings(&app)?;
+    let token = load_github_token()?.ok_or("GitHub token is not configured")?;
+    let status = github::test_connection(
+        token,
+        settings.github_owner.clone(),
+        settings.github_repo.clone(),
+    )?;
+
+    if status.can_push {
+        let mut next = settings;
+        next.github_username = Some(status.login.clone());
+        save_settings(&app, &next)?;
+    }
+
+    Ok(status)
+}
+
+fn list_asset_filenames(draft_path: &Path) -> Result<Vec<String>, String> {
+    let assets_dir = draft_path.join("assets");
+    if !assets_dir.exists() {
+        return Ok(vec![]);
+    }
+
+    let mut filenames = Vec::new();
+    for entry in fs::read_dir(&assets_dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        if entry.file_type().map_err(|e| e.to_string())?.is_file() {
+            filenames.push(entry.file_name().to_string_lossy().into_owned());
+        }
+    }
+    filenames.sort();
+    Ok(filenames)
+}
+
+fn format_mdx_script_path() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../scripts/format-mdx.mjs")
+}
+
+/// Prettier always ends MDX with a newline; `.trim()` alone would strip it and fail CI.
+fn finalize_formatted_mdx(raw: &str) -> String {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        return String::new();
+    }
+    format!("{trimmed}\n")
+}
+
+#[tauri::command]
+fn format_mdx(raw_mdx: String) -> Result<String, String> {
+    let script = format_mdx_script_path();
+    if !script.is_file() {
+        return Err("Prettier format script not found".into());
+    }
+
+    let temp_dir = std::env::temp_dir();
+    let input_path = temp_dir.join(format!(
+        "webpro-mdx-format-{}.mdx",
+        Utc::now().timestamp_nanos_opt().unwrap_or(0)
+    ));
+    fs::write(&input_path, &raw_mdx).map_err(|e| e.to_string())?;
+
+    let output = Command::new("node")
+        .arg(&script)
+        .arg(&input_path)
+        .output()
+        .map_err(|e| {
+            format!(
+                "Failed to run Prettier via Node.js. Ensure Node.js 20+ is installed and on PATH. ({e})"
+            )
+        })?;
+
+    let _ = fs::remove_file(&input_path);
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        return Err(format!(
+            "Prettier formatting failed:\n{stderr}{stdout}"
+        ));
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+}
+
+#[tauri::command]
+fn list_draft_assets(app: tauri::AppHandle, slug: String) -> Result<Vec<String>, String> {
+    let settings = load_settings(&app)?;
+    let draft_path = draft_dir(Path::new(&settings.drafts_dir), &slug);
+    if !draft_path.exists() {
+        return Err(format!("Draft '{}' not found", slug));
+    }
+    list_asset_filenames(&draft_path)
 }
 
 #[tauri::command]
@@ -261,7 +442,11 @@ fn list_drafts(app: tauri::AppHandle) -> Result<Vec<DraftSummary>, String> {
         });
     }
 
-    summaries.sort_by(|a, b| b.last_edited.cmp(&a.last_edited));
+    summaries.sort_by(|a, b| {
+        b.publish_date
+            .cmp(&a.publish_date)
+            .then_with(|| a.slug.cmp(&b.slug))
+    });
     Ok(summaries)
 }
 
@@ -351,61 +536,6 @@ fn delete_draft(app: tauri::AppHandle, slug: String) -> Result<(), String> {
     Ok(())
 }
 
-fn yaml_escape(s: &str) -> String {
-    if s.contains('\n') || s.contains('"') || s.contains('\'') || s.contains(':') {
-        let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
-        format!("\"{}\"", escaped)
-    } else {
-        s.to_string()
-    }
-}
-
-fn build_frontmatter(meta: &DraftMeta) -> String {
-    let mut lines = vec![
-        "---".to_string(),
-        format!("title: {}", yaml_escape(&meta.title)),
-        format!("dek: {}", yaml_escape(&meta.dek)),
-        format!("publishDate: {}", meta.publish_date),
-    ];
-
-    if let Some(v) = &meta.description {
-        lines.push(format!("description: {}", yaml_escape(v)));
-    }
-    lines.push(format!("eyebrow: {}", yaml_escape(effective_eyebrow(meta))));
-    lines.push(format!("byline: {}", yaml_escape(&build_byline(meta))));
-    if let Some(v) = &meta.updated_date {
-        lines.push(format!("updatedDate: {}", v));
-    }
-    if meta.draft {
-        lines.push("draft: true".to_string());
-    }
-    lines.push(format!("author: {}", yaml_escape(&meta.company)));
-    if let Some(v) = &meta.category {
-        lines.push(format!("category: {}", yaml_escape(v)));
-    }
-    if !meta.tags.is_empty() {
-        let tags = meta
-            .tags
-            .iter()
-            .map(|t| yaml_escape(t))
-            .collect::<Vec<_>>()
-            .join(", ");
-        lines.push(format!("tags: [{}]", tags));
-    }
-    if let Some(v) = &meta.crescendo_heading {
-        lines.push(format!("crescendoHeading: {}", yaml_escape(v)));
-    }
-    if !meta.crescendo_body.is_empty() {
-        lines.push("crescendoBody:".to_string());
-        for para in &meta.crescendo_body {
-            lines.push(format!("  - {}", yaml_escape(para)));
-        }
-    }
-
-    lines.push("---".to_string());
-    lines.join("\n")
-}
-
 fn zip_export_folder(export_root: &Path) -> Result<PathBuf, String> {
     let parent = export_root
         .parent()
@@ -445,22 +575,23 @@ fn zip_export_folder(export_root: &Path) -> Result<PathBuf, String> {
 }
 
 #[tauri::command]
-fn export_draft(app: tauri::AppHandle, slug: String, export_dir: String) -> Result<ExportResult, String> {
+fn export_draft(
+    app: tauri::AppHandle,
+    slug: String,
+    export_dir: String,
+    formatted_mdx: String,
+) -> Result<ExportResult, String> {
     let settings = load_settings(&app)?;
     let draft_path = draft_dir(Path::new(&settings.drafts_dir), &slug);
     if !draft_path.exists() {
         return Err(format!("Draft '{}' not found", slug));
     }
 
-    let meta = read_meta(&draft_path.join("meta.json"))?;
-    let body = fs::read_to_string(draft_path.join("body.mdx")).unwrap_or_default();
-
     let export_root = PathBuf::from(&export_dir).join(&slug);
     fs::create_dir_all(&export_root).map_err(|e| e.to_string())?;
     let images_dir = export_root.join("images");
     fs::create_dir_all(&images_dir).map_err(|e| e.to_string())?;
 
-    let mut exported_body = body.clone();
     let assets_dir = draft_path.join("assets");
     let mut image_count = 0;
 
@@ -473,17 +604,12 @@ fn export_draft(app: tauri::AppHandle, slug: String, export_dir: String) -> Resu
             let filename = entry.file_name().to_string_lossy().into_owned();
             let dest = images_dir.join(&filename);
             fs::copy(entry.path(), &dest).map_err(|e| e.to_string())?;
-
-            let public_path = format!("/images/seo-insights/{}", filename);
-            exported_body = exported_body.replace(&format!("assets/{}", filename), &public_path);
-            exported_body = exported_body.replace(&format!("./assets/{}", filename), &public_path);
             image_count += 1;
         }
     }
 
-    let mdx_content = format!("{}\n\n{}", build_frontmatter(&meta), exported_body.trim());
     let mdx_path = export_root.join(format!("{}.mdx", slug));
-    fs::write(&mdx_path, &mdx_content).map_err(|e| e.to_string())?;
+    fs::write(&mdx_path, finalize_formatted_mdx(&formatted_mdx)).map_err(|e| e.to_string())?;
 
     let readme = format!(
         "WEBPRO SEO Insights — Export Bundle\n\
@@ -511,41 +637,240 @@ fn export_draft(app: tauri::AppHandle, slug: String, export_dir: String) -> Resu
 }
 
 #[tauri::command]
+fn publish_draft(
+    app: tauri::AppHandle,
+    slug: String,
+    formatted_mdx: String,
+    commit_message: String,
+) -> Result<PublishResult, String> {
+    let settings = load_settings(&app)?;
+    let token = load_github_token()?.ok_or("GitHub token is not configured")?;
+
+    let status = github::test_connection(
+        token.clone(),
+        settings.github_owner.clone(),
+        settings.github_repo.clone(),
+    )?;
+    if !status.can_push {
+        return Err(format!(
+            "Your GitHub account (@{}) doesn't have write access to {}/{}. Ask the repo owner to invite you as a collaborator.",
+            status.login, settings.github_owner, settings.github_repo
+        ));
+    }
+
+    let draft_path = draft_dir(Path::new(&settings.drafts_dir), &slug);
+    if !draft_path.exists() {
+        return Err(format!("Draft '{}' not found", slug));
+    }
+
+    let mut files = vec![PublishFile {
+        path: format!("src/content/seo-insights/{slug}.mdx"),
+        content: finalize_formatted_mdx(&formatted_mdx).into_bytes(),
+    }];
+
+    let assets_dir = draft_path.join("assets");
+    if assets_dir.exists() {
+        for entry in fs::read_dir(&assets_dir).map_err(|e| e.to_string())? {
+            let entry = entry.map_err(|e| e.to_string())?;
+            if !entry.file_type().map_err(|e| e.to_string())?.is_file() {
+                continue;
+            }
+            let filename = entry.file_name().to_string_lossy().into_owned();
+            let bytes = fs::read(entry.path()).map_err(|e| e.to_string())?;
+            files.push(PublishFile {
+                path: format!("public/images/seo-insights/{filename}"),
+                content: bytes,
+            });
+        }
+    }
+
+    github::publish_files(
+        token,
+        settings.github_owner,
+        settings.github_repo,
+        settings.github_branch,
+        commit_message,
+        status.login,
+        files,
+    )
+}
+
+#[tauri::command]
+fn existing_draft_slugs(app: &tauri::AppHandle) -> Result<HashSet<String>, String> {
+    Ok(list_drafts(app.clone())?
+        .into_iter()
+        .map(|d| d.slug)
+        .collect())
+}
+
+#[tauri::command]
+fn set_webpro_local_path(app: tauri::AppHandle, path: String) -> Result<AppSettings, String> {
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return Err("Webpro folder path cannot be empty".into());
+    }
+    resolve_webpro_paths(Path::new(trimmed))?;
+    let mut settings = load_settings(&app)?;
+    settings.webpro_local_path = Some(trimmed.to_string());
+    save_settings(&app, &settings)?;
+    Ok(settings)
+}
+
+#[tauri::command]
+fn list_webpro_articles(app: tauri::AppHandle) -> Result<Vec<WebproArticleSummary>, String> {
+    let settings = load_settings(&app)?;
+    let token = load_github_token()?.ok_or("GitHub token is not configured")?;
+    let existing = existing_draft_slugs(&app)?;
+    let owner = settings.github_owner.clone();
+    let repo = settings.github_repo.clone();
+    let branch = settings.github_branch.clone();
+
+    let files = list_seo_insights_mdx_files(token.clone(), owner.clone(), repo.clone(), branch.clone())?;
+
+    let mut summaries = Vec::new();
+    for (slug, _path) in files {
+        let raw = fetch_seo_insights_mdx(token.clone(), owner.clone(), repo.clone(), branch.clone(), &slug)?;
+        summaries.push(summary_from_mdx(
+            slug.clone(),
+            &raw,
+            existing.contains(&slug),
+        )?);
+    }
+
+    Ok(summaries)
+}
+
+#[tauri::command]
+fn list_webpro_articles_local(
+    app: tauri::AppHandle,
+    webpro_root: String,
+) -> Result<Vec<WebproArticleSummary>, String> {
+    let existing = existing_draft_slugs(&app)?;
+    list_local_webpro_articles(Path::new(webpro_root.trim()), &existing)
+}
+
+#[tauri::command]
+fn import_webpro_articles_from_github(
+    app: tauri::AppHandle,
+    slugs: Vec<String>,
+) -> Result<ImportWebproResult, String> {
+    let settings = load_settings(&app)?;
+    ensure_drafts_dir(Path::new(&settings.drafts_dir))?;
+    let token = load_github_token()?.ok_or("GitHub token is not configured")?;
+    let drafts_dir = PathBuf::from(&settings.drafts_dir);
+    let owner = settings.github_owner.clone();
+    let repo = settings.github_repo.clone();
+    let branch = settings.github_branch.clone();
+
+    let mut result = ImportWebproResult {
+        imported: Vec::new(),
+        skipped: Vec::new(),
+        failed: Vec::new(),
+    };
+
+    for slug in slugs {
+        if drafts_dir.join(&slug).exists() {
+            result.skipped.push(slug);
+            continue;
+        }
+
+        let raw = match fetch_seo_insights_mdx(
+            token.clone(),
+            owner.clone(),
+            repo.clone(),
+            branch.clone(),
+            &slug,
+        ) {
+            Ok(raw) => raw,
+            Err(err) => {
+                result.failed.push(import_webpro::ImportWebproFailure { slug, error: err });
+                continue;
+            }
+        };
+
+        let image_filenames =
+            import_webpro::discover_webpro_image_filenames(&parse_frontmatter(&raw)?.1);
+        let mut image_files = Vec::new();
+        for filename in &image_filenames {
+            match fetch_seo_insights_image(
+                token.clone(),
+                owner.clone(),
+                repo.clone(),
+                branch.clone(),
+                filename,
+            ) {
+                Ok(bytes) => image_files.push((filename.clone(), bytes)),
+                Err(_) => {}
+            }
+        }
+
+        let image_source = ImageSource::Memory(MemoryImageSource { files: image_files });
+        match create_draft_from_webpro_mdx(&drafts_dir, &slug, &raw, &image_source, true) {
+            Ok(_) => result.imported.push(slug),
+            Err(err) if err.contains("already exists") => result.skipped.push(slug),
+            Err(err) => result.failed.push(import_webpro::ImportWebproFailure { slug, error: err }),
+        }
+    }
+
+    Ok(result)
+}
+
+#[tauri::command]
+fn import_webpro_articles_local(
+    app: tauri::AppHandle,
+    webpro_root: String,
+    slugs: Vec<String>,
+) -> Result<ImportWebproResult, String> {
+    let settings = load_settings(&app)?;
+    ensure_drafts_dir(Path::new(&settings.drafts_dir))?;
+    let paths = resolve_webpro_paths(Path::new(webpro_root.trim()))?;
+    let drafts_dir = PathBuf::from(&settings.drafts_dir);
+    let image_source = ImageSource::Local(LocalImageSource {
+        images_dir: &paths.images_dir,
+    });
+
+    Ok(import_webpro_slugs(&drafts_dir, &slugs, |slug| {
+        let mdx_path = paths.content_dir.join(format!("{slug}.mdx"));
+        if mdx_path.is_file() {
+            return fs::read_to_string(&mdx_path).map_err(|e| e.to_string());
+        }
+        let md_path = paths.content_dir.join(format!("{slug}.md"));
+        fs::read_to_string(&md_path).map_err(|e| e.to_string())
+    }, &image_source))
+}
+
+#[tauri::command]
 fn import_mdx(app: tauri::AppHandle, file_path: String) -> Result<DraftContent, String> {
     let settings = load_settings(&app)?;
     ensure_drafts_dir(Path::new(&settings.drafts_dir))?;
 
     let raw = fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
-    let (frontmatter, body) = parse_frontmatter(&raw)?;
+    let meta_preview = parse_frontmatter(&raw)?.0;
 
     let slug = Path::new(&file_path)
         .file_stem()
         .and_then(|s| s.to_str())
         .map(|s| s.to_string())
-        .unwrap_or_else(|| slugify(&frontmatter.title));
+        .unwrap_or_else(|| slugify(&meta_preview.title));
 
-    let dir = draft_dir(Path::new(&settings.drafts_dir), &slug);
-    if dir.exists() {
-        return Err(format!("Draft '{}' already exists — delete it first or rename the file", slug));
-    }
-
-    fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    fs::create_dir_all(dir.join("assets")).map_err(|e| e.to_string())?;
-
-    let mut meta = frontmatter;
-    meta.slug = slug.clone();
-    meta.last_edited = now_iso();
-
-    write_meta(&dir.join("meta.json"), &meta)?;
-    fs::write(dir.join("body.mdx"), body.trim()).map_err(|e| e.to_string())?;
-
-    Ok(DraftContent {
-        meta,
-        body: body.trim().to_string(),
+    let empty_images = ImageSource::Memory(MemoryImageSource { files: vec![] });
+    create_draft_from_webpro_mdx(
+        Path::new(&settings.drafts_dir),
+        &slug,
+        &raw,
+        &empty_images,
+        true,
+    )
+    .map_err(|e| {
+        if e.contains("already exists") {
+            format!("Draft '{slug}' already exists — delete it first or rename the file")
+        } else {
+            e
+        }
     })
 }
 
-fn parse_frontmatter(raw: &str) -> Result<(DraftMeta, String), String> {
+pub(crate) fn parse_frontmatter(raw: &str) -> Result<(DraftMeta, String), String> {
     let trimmed = raw.trim_start();
     if !trimmed.starts_with("---") {
         return Err("File has no YAML frontmatter".into());
@@ -584,7 +909,7 @@ fn parse_frontmatter(raw: &str) -> Result<(DraftMeta, String), String> {
         }
         if in_crescendo {
             if let Some(para) = line.strip_prefix("- ") {
-                meta.crescendo_body.push(unquote_yaml(para));
+                meta.crescendo_body.push(parse_yaml_scalar(para));
                 continue;
             }
             in_crescendo = false;
@@ -593,31 +918,31 @@ fn parse_frontmatter(raw: &str) -> Result<(DraftMeta, String), String> {
             let key = key.trim();
             let val = val.trim();
             match key {
-                "title" => meta.title = unquote_yaml(val),
-                "dek" => meta.dek = unquote_yaml(val),
-                "description" => meta.description = Some(unquote_yaml(val)),
-                "eyebrow" => meta.eyebrow = Some(unquote_yaml(val)),
-                "byline" => meta.byline = Some(unquote_yaml(val)),
-                "publishDate" => meta.publish_date = unquote_yaml(val),
-                "updatedDate" => meta.updated_date = Some(unquote_yaml(val)),
+                "title" => meta.title = parse_yaml_scalar(val),
+                "dek" => meta.dek = parse_yaml_scalar(val),
+                "description" => meta.description = Some(parse_yaml_scalar(val)),
+                "eyebrow" => meta.eyebrow = Some(parse_yaml_scalar(val)),
+                "byline" => meta.byline = Some(parse_yaml_scalar(val)),
+                "publishDate" => meta.publish_date = parse_yaml_scalar(val),
+                "updatedDate" => meta.updated_date = Some(parse_yaml_scalar(val)),
                 "draft" => meta.draft = val == "true",
-                "author" => meta.company = unquote_yaml(val),
-                "company" => meta.company = unquote_yaml(val),
-                "location" => meta.location = unquote_yaml(val),
-                "category" => meta.category = Some(unquote_yaml(val)),
+                "author" => meta.company = parse_yaml_scalar(val),
+                "company" => meta.company = parse_yaml_scalar(val),
+                "location" => meta.location = parse_yaml_scalar(val),
+                "category" => meta.category = Some(parse_yaml_scalar(val)),
                 "tags" => {
                     let inner = val.trim_start_matches('[').trim_end_matches(']');
                     meta.tags = inner
                         .split(',')
-                        .map(|t| unquote_yaml(t.trim()))
+                        .map(|t| parse_yaml_scalar(t.trim()))
                         .filter(|t| !t.is_empty())
                         .collect();
                 }
-                "crescendoHeading" => meta.crescendo_heading = Some(unquote_yaml(val)),
+                "crescendoHeading" => meta.crescendo_heading = Some(parse_yaml_scalar(val)),
                 "crescendoBody" => {
                     in_crescendo = true;
                     if let Some(para) = val.strip_prefix("- ") {
-                        meta.crescendo_body.push(unquote_yaml(para));
+                        meta.crescendo_body.push(parse_yaml_scalar(para));
                     }
                 }
                 _ => {}
@@ -632,12 +957,61 @@ fn parse_frontmatter(raw: &str) -> Result<(DraftMeta, String), String> {
     Ok((meta, body))
 }
 
-fn unquote_yaml(s: &str) -> String {
+fn parse_yaml_scalar(s: &str) -> String {
     let s = s.trim();
+    if s.starts_with('"') {
+        if let Ok(parsed) = serde_json::from_str::<String>(s) {
+            return parsed;
+        }
+    }
     if (s.starts_with('"') && s.ends_with('"')) || (s.starts_with('\'') && s.ends_with('\'')) {
-        s[1..s.len() - 1].replace("\\\"", "\"").replace("\\n", "\n")
-    } else {
-        s.to_string()
+        return s[1..s.len() - 1]
+            .replace("\\\"", "\"")
+            .replace("\\n", "\n");
+    }
+    s.to_string()
+}
+
+#[cfg(test)]
+mod formatted_mdx_tests {
+    use super::finalize_formatted_mdx;
+
+    #[test]
+    fn finalize_preserves_prettier_trailing_newline() {
+        assert_eq!(finalize_formatted_mdx("---\ntitle: T\n---\n\nBody\n"), "---\ntitle: T\n---\n\nBody\n");
+    }
+
+    #[test]
+    fn finalize_adds_newline_when_trimmed_away() {
+        assert_eq!(finalize_formatted_mdx("---\ntitle: T\n---\n\nBody"), "---\ntitle: T\n---\n\nBody\n");
+    }
+}
+
+#[cfg(test)]
+mod frontmatter_tests {
+    use super::parse_frontmatter;
+
+    #[test]
+    fn parse_title_with_accent_span_unquoted() {
+        let raw = "---\ntitle: Wolf. <span class=\"accent\">Wolf.</span> Wolf.\ndek: Subtitle\npublishDate: 2025-01-01\n---\n\nBody";
+        let (meta, body) = parse_frontmatter(raw).expect("parse");
+        assert_eq!(meta.title, "Wolf. <span class=\"accent\">Wolf.</span> Wolf.");
+        assert_eq!(body.trim(), "Body");
+    }
+
+    #[test]
+    fn parse_title_with_accent_span_json_quoted() {
+        let raw = "---\ntitle: \"Wolf. <span class=\\\"accent\\\">Wolf.</span> Wolf.\"\ndek: Subtitle\npublishDate: 2025-01-01\n---\n\nBody";
+        let (meta, _) = parse_frontmatter(raw).expect("parse");
+        assert_eq!(meta.title, "Wolf. <span class=\"accent\">Wolf.</span> Wolf.");
+    }
+
+    #[test]
+    fn slugify_strips_accent_markup() {
+        assert_eq!(
+            super::slugify("Wolf. <span class=\"accent\">Wolf.</span> Wolf."),
+            "wolf-wolf-wolf"
+        );
     }
 }
 
@@ -728,13 +1102,26 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_settings,
             set_drafts_dir,
+            set_github_settings,
+            set_github_token,
+            disconnect_github,
+            get_github_token_configured,
+            test_github_connection,
+            format_mdx,
+            list_draft_assets,
             list_drafts,
             create_draft,
             load_draft,
             save_draft,
             delete_draft,
             export_draft,
+            publish_draft,
             import_mdx,
+            set_webpro_local_path,
+            list_webpro_articles,
+            list_webpro_articles_local,
+            import_webpro_articles_from_github,
+            import_webpro_articles_local,
             copy_image_to_draft,
             read_draft_asset_data_url,
         ])
