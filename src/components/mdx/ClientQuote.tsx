@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { wrapArchivoPeriods } from '../../lib/archivo';
 import styles from './ClientQuote.module.css';
 
@@ -8,14 +9,17 @@ interface Props {
 }
 
 function quoteHtml(children: ReactNode): string {
-  if (typeof children === 'string') return wrapArchivoPeriods(children);
-  return wrapArchivoPeriods(String(children ?? ''));
+  if (children == null || children === false) return '';
+  if (typeof children === 'string' || typeof children === 'number') {
+    return wrapArchivoPeriods(String(children));
+  }
+  return wrapArchivoPeriods(renderToStaticMarkup(<>{children}</>));
 }
 
 export function ClientQuote({ attribution, children }: Props) {
   return (
     <blockquote className={styles.clientQuote}>
-      <p
+      <div
         className={styles.text}
         dangerouslySetInnerHTML={{ __html: quoteHtml(children) }}
       />
