@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ArchivoHtml } from './ArchivoHtml';
 import styles from './Rock.module.css';
 
 export function RockGrid({ children }: { children?: ReactNode }) {
@@ -19,7 +20,7 @@ export function Rock({ n, label, meta, children }: RockProps) {
       <span className={styles.num}>{num}</span>
       <div className={styles.body}>
         {meta && <span className={styles.meta}>{meta}</span>}
-        <h4 className={styles.label}>{label}</h4>
+        <ArchivoHtml as="h4" className={styles.label} html={label} />
         {children}
       </div>
     </li>

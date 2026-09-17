@@ -11,10 +11,12 @@ import '@fontsource/ibm-plex-mono/600.css';
 import './styles/tokens.css';
 import './styles/app.css';
 import './styles/article.css';
+import { syncBrowserTitle } from './lib/app-info';
 import { loadTheme } from './lib/theme';
 import App from './App';
 
 document.documentElement.dataset.uiTheme = loadTheme();
+syncBrowserTitle();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

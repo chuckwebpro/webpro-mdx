@@ -40,3 +40,13 @@
   text-align: center;
   margin-top: 0.75rem;
 }
+
+.placeholder {
+  padding: 2rem;
+  text-align: center;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--color-line-base);
+  color: var(--color-ink-muted);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 0.78rem;
+}

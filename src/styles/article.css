@@ -128,6 +128,10 @@
   background: linear-gradient(transparent 62%, rgba(224, 70, 56, 0.16) 62%);
 }
 
+.archivo-dot {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
 .insights-body table {
   display: block;
   overflow-x: auto;

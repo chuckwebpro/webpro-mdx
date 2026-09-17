@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { isDraftAssetPath, resolveDraftAssetUrl } from '../../lib/draft-assets';
 import { useDraftEditorSlugOptional } from '../../lib/draft-editor-context';
+import styles from './Shot.module.css';
 
 interface Props {
   src: string;
@@ -33,83 +34,20 @@ export function Shot({ src = '', alt = '', rank, caption }: Props) {
 
   if (!safeSrc.trim()) {
     return (
-      <figure className="shot-block" style={{ marginBlock: '2em' }}>
-        <div
-          style={{
-            padding: '2rem',
-            textAlign: 'center',
-            borderRadius: 'var(--radius-md)',
-            border: '1px dashed var(--color-line-base)',
-            color: 'var(--color-ink-muted)',
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '0.78rem',
-          }}
-        >
-          Image URL required
-        </div>
-        {caption && (
-          <figcaption
-            style={{
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '0.78rem',
-              color: 'var(--color-ink-muted)',
-              textAlign: 'center',
-              marginTop: '0.75rem',
-            }}
-          >
-            {caption}
-          </figcaption>
-        )}
+      <figure className={styles.shot}>
+        <div className={styles.placeholder}>Image URL required</div>
+        {caption && <figcaption className={styles.caption}>{caption}</figcaption>}
       </figure>
     );
   }
 
   return (
-    <figure className="shot-block" style={{ marginBlock: '2em' }}>
-      <div style={{ position: 'relative' }}>
-        <img
-          src={resolvedSrc}
-          alt={alt}
-          style={{
-            width: '100%',
-            height: 'auto',
-            display: 'block',
-            borderRadius: 'var(--radius-md)',
-            border: '1px solid var(--color-line-base)',
-          }}
-        />
-        {rank !== undefined && (
-          <span
-            style={{
-              position: 'absolute',
-              top: '0.625rem',
-              left: '0.625rem',
-              background: 'var(--color-brand-500)',
-              color: '#fff',
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              padding: '0.3rem 0.6rem',
-              borderRadius: 'var(--radius-sm)',
-            }}
-          >
-            #{rank}
-          </span>
-        )}
+    <figure className={styles.shot}>
+      <div className={styles.frame}>
+        <img src={resolvedSrc} alt={alt} loading="lazy" decoding="async" className={styles.img} />
+        {rank !== undefined && <span className={styles.rank}>#{rank}</span>}
       </div>
-      {caption && (
-        <figcaption
-          style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: '0.78rem',
-            color: 'var(--color-ink-muted)',
-            textAlign: 'center',
-            marginTop: '0.75rem',
-          }}
-        >
-          {caption}
-        </figcaption>
-      )}
+      {caption && <figcaption className={styles.caption}>{caption}</figcaption>}
     </figure>
   );
 }

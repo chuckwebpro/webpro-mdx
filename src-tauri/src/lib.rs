@@ -842,6 +842,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             apply_window_icon(app);
+            if let Some(window) = app.get_webview_window("main") {
+                let version = app.package_info().version.to_string();
+                let title = format!("Webpro MDX Editor v{version}");
+                let _ = window.set_title(&title);
+            }
             let settings = load_settings(&app.handle()).unwrap_or_default();
             ensure_drafts_dir(Path::new(&settings.drafts_dir)).ok();
             save_settings(&app.handle(), &settings).ok();

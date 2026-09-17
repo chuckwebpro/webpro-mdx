@@ -30,7 +30,17 @@
   color: #2a2a2a;
 }
 
+.verdictText p {
+  margin: 0;
+}
+
 .verdictText strong {
   font-weight: 600;
   background: linear-gradient(transparent 62%, rgba(224, 70, 56, 0.16) 62%);
+}
+
+@media (max-width: 480px) {
+  .verdict {
+    grid-template-columns: 70px 1fr;
+  }
 }

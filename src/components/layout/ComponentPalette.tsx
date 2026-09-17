@@ -8,7 +8,7 @@ interface Props {
 
 export function ComponentPalette({ disabled, onInsert }: Props) {
   const { startDrag } = useComponentDrag();
-  const groups = ['Callouts', 'Media', 'Lists', 'Other'] as const;
+  const groups = ['Callouts', 'Media', 'Lists', 'Data', 'Other'] as const;
 
   return (
     <div className="component-palette">

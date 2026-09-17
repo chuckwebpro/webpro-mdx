@@ -7,6 +7,11 @@ import { RockGrid, Rock } from './Rock';
 import { CodeBlock } from './CodeBlock';
 import { CraftGrid, CraftRow } from './Craft';
 import { SourceNote } from './SourceNote';
+import { ClientQuote } from './ClientQuote';
+import { CodeRewriteLabel } from './CodeRewriteLabel';
+import { StatRow, StatCard } from './Stat';
+import { EffortCompare, EffortCol } from './EffortCompare';
+import { ChannelTable, ChannelRow } from './Channel';
 
 export const mdxComponents = {
   Verdict,
@@ -20,6 +25,14 @@ export const mdxComponents = {
   CraftGrid,
   CraftRow,
   SourceNote,
+  ClientQuote,
+  CodeRewriteLabel,
+  StatRow,
+  StatCard,
+  EffortCompare,
+  EffortCol,
+  ChannelTable,
+  ChannelRow,
 };
 
 export type MdxComponentName = keyof typeof mdxComponents;

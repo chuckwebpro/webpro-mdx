@@ -147,3 +147,49 @@ export function createCraftRowNode(n: string): RootContent {
     children: [],
   };
 }
+
+type StatCardFlowElement = {
+  type: 'mdxJsxFlowElement';
+  name: 'StatCard';
+  attributes?: unknown[];
+  children?: RootContent[];
+};
+
+export function isStatCardNode(node: unknown): node is StatCardFlowElement {
+  return isMdxJsxFlowElement(node) && node.name === 'StatCard';
+}
+
+export function createStatCardNode(): RootContent {
+  return {
+    type: 'mdxJsxFlowElement',
+    name: 'StatCard',
+    attributes: [
+      { type: 'mdxJsxAttribute', name: 'value', value: '0%' },
+      { type: 'mdxJsxAttribute', name: 'label', value: 'Stat label' },
+    ],
+    children: [],
+  };
+}
+
+type ChannelRowFlowElement = {
+  type: 'mdxJsxFlowElement';
+  name: 'ChannelRow';
+  attributes?: unknown[];
+  children?: RootContent[];
+};
+
+export function isChannelRowNode(node: unknown): node is ChannelRowFlowElement {
+  return isMdxJsxFlowElement(node) && node.name === 'ChannelRow';
+}
+
+export function createChannelRowNode(): RootContent {
+  return {
+    type: 'mdxJsxFlowElement',
+    name: 'ChannelRow',
+    attributes: [
+      { type: 'mdxJsxAttribute', name: 'channel', value: 'Channel' },
+      { type: 'mdxJsxAttribute', name: 'does', value: 'What this channel does.' },
+    ],
+    children: [],
+  };
+}

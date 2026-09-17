@@ -77,7 +77,7 @@ npm run icons
 
 ## Components
 
-All 11 webpro SEO Insights MDX components are supported via **Insert Component**. See `docs/SEO-INSIGHTS-AUTHORING.md` in the webpro repo for usage details.
+All 18 webpro SEO Insights MDX body components are supported via **Insert Component**. See `docs/SEO-INSIGHTS-AUTHORING.md` in the webpro repo for usage details.
 
 `InsightsCrescendo` is configured via frontmatter (`crescendoHeading`, `crescendoBody`), not inserted in the body.
 

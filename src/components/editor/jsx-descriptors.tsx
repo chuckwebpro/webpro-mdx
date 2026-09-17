@@ -1,4 +1,6 @@
 import { type JsxComponentDescriptor } from '@mdxeditor/editor';
+import { ChannelRowJsxEditor } from './ChannelRowJsxEditor';
+import { ChannelTableJsxEditor } from './ChannelTableJsxEditor';
 import { ChildrenTextJsxEditor } from './ChildrenTextJsxEditor';
 import { CraftGridJsxEditor } from './CraftGridJsxEditor';
 import { CraftRowJsxEditor } from './CraftRowJsxEditor';
@@ -6,6 +8,8 @@ import { InlinePropsJsxEditor } from './InlinePropsJsxEditor';
 import { RockGridJsxEditor } from './RockGridJsxEditor';
 import { RockJsxEditor } from './RockJsxEditor';
 import { ShotJsxEditor } from './ShotJsxEditor';
+import { StatCardJsxEditor } from './StatCardJsxEditor';
+import { StatRowJsxEditor } from './StatRowJsxEditor';
 
 const flow = (
   name: string,
@@ -18,6 +22,7 @@ const flow = (
   hasChildren,
   Editor: InlinePropsJsxEditor,
 });
+
 export const jsxComponentDescriptors: JsxComponentDescriptor[] = [
   flow('Verdict', [{ name: 'label', type: 'string' }]),
   flow('Specimen', [
@@ -33,6 +38,7 @@ export const jsxComponentDescriptors: JsxComponentDescriptor[] = [
     Editor: ChildrenTextJsxEditor,
   },
   flow('PullQuote', []),
+  flow('ClientQuote', [{ name: 'attribution', type: 'string' }]),
   {
     name: 'Shot',
     kind: 'flow',
@@ -67,6 +73,7 @@ export const jsxComponentDescriptors: JsxComponentDescriptor[] = [
     { name: 'label', type: 'string' },
     { name: 'html', type: 'expression', required: true },
   ], false),
+  flow('CodeRewriteLabel', [{ name: 'label', type: 'string', required: true }], false),
   {
     name: 'CraftGrid',
     kind: 'flow',
@@ -83,6 +90,46 @@ export const jsxComponentDescriptors: JsxComponentDescriptor[] = [
     ],
     hasChildren: true,
     Editor: CraftRowJsxEditor,
+  },
+  {
+    name: 'StatRow',
+    kind: 'flow',
+    props: [],
+    hasChildren: true,
+    Editor: StatRowJsxEditor,
+  },
+  {
+    name: 'StatCard',
+    kind: 'flow',
+    props: [
+      { name: 'value', type: 'string', required: true },
+      { name: 'label', type: 'string', required: true },
+    ],
+    hasChildren: false,
+    Editor: StatCardJsxEditor,
+  },
+  flow('EffortCompare', []),
+  flow('EffortCol', [
+    { name: 'variant', type: 'string', required: true },
+    { name: 'title', type: 'string', required: true },
+    { name: 'items', type: 'expression', required: true },
+  ], false),
+  {
+    name: 'ChannelTable',
+    kind: 'flow',
+    props: [],
+    hasChildren: true,
+    Editor: ChannelTableJsxEditor,
+  },
+  {
+    name: 'ChannelRow',
+    kind: 'flow',
+    props: [
+      { name: 'channel', type: 'string', required: true },
+      { name: 'does', type: 'string', required: true },
+    ],
+    hasChildren: true,
+    Editor: ChannelRowJsxEditor,
   },
   flow('SourceNote', []),
 ];

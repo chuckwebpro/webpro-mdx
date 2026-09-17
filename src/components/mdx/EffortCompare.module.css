@@ -1,0 +1,57 @@
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin-block: 2.125rem;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--color-line-base);
+  box-shadow: 0 18px 40px -28px rgba(0, 0, 0, 0.4);
+}
+
+.col {
+  background: #fff;
+}
+
+.colLow {
+  border-right: 1px solid var(--color-line-base);
+}
+
+.head {
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 14px 18px;
+  font-weight: 600;
+}
+
+.headLow {
+  background: #fde8e8;
+  color: #a01010;
+}
+
+.headHigh {
+  background: #e0f5e9;
+  color: #0a6e3a;
+}
+
+.item {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: 15px;
+  line-height: 1.5;
+  padding: 10px 18px;
+  border-top: 1px solid #f0ede6;
+  color: #444;
+}
+
+@media (max-width: 640px) {
+  .compare {
+    grid-template-columns: 1fr;
+  }
+
+  .colLow {
+    border-right: none;
+    border-bottom: 1px solid var(--color-line-base);
+  }
+}

@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
+import { APP_NAME } from './app-info';
 import { browserApi, getApiMode } from './browser-api';
 import { normalizeDraftContent } from './normalize-draft';
 import type {
@@ -101,7 +102,7 @@ export async function showMessage(
   options?: { title?: string; kind?: 'info' | 'error' },
 ): Promise<void> {
   if (getApiMode() === 'browser') {
-    window.alert(`${options?.title ?? 'Webpro MDX Editor'}\n\n${text}`);
+    window.alert(`${options?.title ?? APP_NAME}\n\n${text}`);
     return;
   }
   const { message } = await import('@tauri-apps/plugin-dialog');
