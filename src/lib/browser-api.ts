@@ -11,13 +11,6 @@ import {
   DEFAULT_BYLINE_AUTHOR,
   DEFAULT_BYLINE_COMPANY,
   DEFAULT_BYLINE_LOCATION,
-  DEFAULT_CRESCENDO_BOOK_SUBTITLE,
-  DEFAULT_CRESCENDO_BOOK_TITLE,
-  DEFAULT_CRESCENDO_EYEBROW,
-  DEFAULT_CRESCENDO_PRIMARY_CTA_HREF,
-  DEFAULT_CRESCENDO_PRIMARY_CTA_LABEL,
-  DEFAULT_CRESCENDO_SECONDARY_CTA_HREF,
-  DEFAULT_CRESCENDO_SECONDARY_CTA_LABEL,
   DEFAULT_DEK,
   DEFAULT_EYEBROW,
   effectiveEyebrow,
@@ -90,16 +83,7 @@ export const browserApi = {
       company: DEFAULT_BYLINE_COMPANY,
       location: DEFAULT_BYLINE_LOCATION,
       tags: [],
-      crescendoEyebrow: DEFAULT_CRESCENDO_EYEBROW,
       crescendoBody: [],
-      crescendoBookTitle: DEFAULT_CRESCENDO_BOOK_TITLE,
-      crescendoBookSubtitle: DEFAULT_CRESCENDO_BOOK_SUBTITLE,
-      crescendoPrimaryCtaLabel: DEFAULT_CRESCENDO_PRIMARY_CTA_LABEL,
-      crescendoPrimaryCtaHref: DEFAULT_CRESCENDO_PRIMARY_CTA_HREF,
-      crescendoPrimaryCtaNewTab: true,
-      crescendoSecondaryCtaLabel: DEFAULT_CRESCENDO_SECONDARY_CTA_LABEL,
-      crescendoSecondaryCtaHref: DEFAULT_CRESCENDO_SECONDARY_CTA_HREF,
-      crescendoSecondaryCtaNewTab: true,
       lastEdited: nowIso(),
     };
     const draft: DraftContent = { meta, body: '' };
@@ -190,33 +174,10 @@ function buildFrontmatter(meta: DraftMeta): string {
   lines.push(`author: ${JSON.stringify(meta.company || DEFAULT_BYLINE_COMPANY)}`);
   if (meta.category) lines.push(`category: ${JSON.stringify(meta.category)}`);
   if (meta.tags.length) lines.push(`tags: [${meta.tags.map((t) => JSON.stringify(t)).join(', ')}]`);
-  if (meta.crescendoEyebrow) lines.push(`crescendoEyebrow: ${JSON.stringify(meta.crescendoEyebrow)}`);
   if (meta.crescendoHeading) lines.push(`crescendoHeading: ${JSON.stringify(meta.crescendoHeading)}`);
   if (meta.crescendoBody.length) {
     lines.push('crescendoBody:');
     meta.crescendoBody.forEach((p) => lines.push(`  - ${JSON.stringify(p)}`));
-  }
-  if (meta.crescendoBookTitle) lines.push(`crescendoBookTitle: ${JSON.stringify(meta.crescendoBookTitle)}`);
-  if (meta.crescendoBookSubtitle) {
-    lines.push(`crescendoBookSubtitle: ${JSON.stringify(meta.crescendoBookSubtitle)}`);
-  }
-  if (meta.crescendoPrimaryCtaLabel) {
-    lines.push(`crescendoPrimaryCtaLabel: ${JSON.stringify(meta.crescendoPrimaryCtaLabel)}`);
-  }
-  if (meta.crescendoPrimaryCtaHref) {
-    lines.push(`crescendoPrimaryCtaHref: ${JSON.stringify(meta.crescendoPrimaryCtaHref)}`);
-  }
-  if (meta.crescendoPrimaryCtaNewTab === false) {
-    lines.push('crescendoPrimaryCtaNewTab: false');
-  }
-  if (meta.crescendoSecondaryCtaLabel) {
-    lines.push(`crescendoSecondaryCtaLabel: ${JSON.stringify(meta.crescendoSecondaryCtaLabel)}`);
-  }
-  if (meta.crescendoSecondaryCtaHref) {
-    lines.push(`crescendoSecondaryCtaHref: ${JSON.stringify(meta.crescendoSecondaryCtaHref)}`);
-  }
-  if (meta.crescendoSecondaryCtaNewTab === false) {
-    lines.push('crescendoSecondaryCtaNewTab: false');
   }
   lines.push('---');
   return lines.join('\n');

@@ -3,19 +3,7 @@ import { compile, run } from '@mdx-js/mdx';
 import * as runtime from 'react/jsx-runtime';
 import type { DraftMeta } from '../../lib/types';
 import { buildByline } from '../../lib/byline';
-import {
-  DEFAULT_CRESCENDO_BODY_FALLBACK,
-  effectiveCrescendoBookSubtitle,
-  effectiveCrescendoBookTitle,
-  effectiveCrescendoEyebrow,
-  effectiveCrescendoPrimaryCtaHref,
-  effectiveCrescendoPrimaryCtaLabel,
-  effectiveCrescendoPrimaryCtaNewTab,
-  effectiveCrescendoSecondaryCtaHref,
-  effectiveCrescendoSecondaryCtaLabel,
-  effectiveCrescendoSecondaryCtaNewTab,
-  effectiveEyebrow,
-} from '../../lib/types';
+import { effectiveEyebrow } from '../../lib/types';
 import { mdxComponents } from '../mdx';
 import { InsightsCrescendo } from '../mdx/Crescendo';
 
@@ -90,20 +78,7 @@ export function ArticlePreview({ meta, body }: Props) {
         </div>
       </div>
 
-      <InsightsCrescendo
-        eyebrow={effectiveCrescendoEyebrow(meta)}
-        heading={meta.crescendoHeading}
-        body={meta.crescendoBody}
-        bodyFallback={DEFAULT_CRESCENDO_BODY_FALLBACK}
-        bookTitle={effectiveCrescendoBookTitle(meta)}
-        bookSubtitle={effectiveCrescendoBookSubtitle(meta)}
-        primaryCtaLabel={effectiveCrescendoPrimaryCtaLabel(meta)}
-        primaryCtaHref={effectiveCrescendoPrimaryCtaHref(meta)}
-        primaryCtaNewTab={effectiveCrescendoPrimaryCtaNewTab(meta)}
-        secondaryCtaLabel={effectiveCrescendoSecondaryCtaLabel(meta)}
-        secondaryCtaHref={effectiveCrescendoSecondaryCtaHref(meta)}
-        secondaryCtaNewTab={effectiveCrescendoSecondaryCtaNewTab(meta)}
-      />
+      <InsightsCrescendo heading={meta.crescendoHeading} body={meta.crescendoBody} />
     </div>
   );
 }

@@ -20,17 +20,8 @@ export const articleSchema = z.object({
   location: z.string().optional().default(DEFAULT_BYLINE_LOCATION),
   category: z.string().optional(),
   tags: z.array(z.string()).default([]),
-  crescendoEyebrow: z.string().optional(),
   crescendoHeading: z.string().optional(),
   crescendoBody: z.array(z.string()).default([]),
-  crescendoBookTitle: z.string().optional(),
-  crescendoBookSubtitle: z.string().optional(),
-  crescendoPrimaryCtaLabel: z.string().optional(),
-  crescendoPrimaryCtaHref: z.string().optional(),
-  crescendoPrimaryCtaNewTab: z.boolean().optional(),
-  crescendoSecondaryCtaLabel: z.string().optional(),
-  crescendoSecondaryCtaHref: z.string().optional(),
-  crescendoSecondaryCtaNewTab: z.boolean().optional(),
   lastEdited: z.string(),
 });
 

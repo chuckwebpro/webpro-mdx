@@ -67,27 +67,9 @@ pub struct DraftMeta {
     #[serde(default)]
     pub tags: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub crescendo_eyebrow: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub crescendo_heading: Option<String>,
     #[serde(default)]
     pub crescendo_body: Vec<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub crescendo_book_title: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub crescendo_book_subtitle: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub crescendo_primary_cta_label: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub crescendo_primary_cta_href: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub crescendo_primary_cta_new_tab: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub crescendo_secondary_cta_label: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub crescendo_secondary_cta_href: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub crescendo_secondary_cta_new_tab: Option<bool>,
     pub last_edited: String,
 }
 
@@ -107,53 +89,8 @@ const DEFAULT_EYEBROW: &str = "A WEBPRO White Paper / SEO Scientific";
 
 const DEFAULT_DEK: &str = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor.";
 
-const DEFAULT_CRESCENDO_EYEBROW: &str = "The bigger picture";
-const DEFAULT_CRESCENDO_BOOK_TITLE: &str = "Scroogled.";
-const DEFAULT_CRESCENDO_BOOK_SUBTITLE: &str =
-    "SEO Survival. How Google Killed the Internet, and How You Can Win.";
-const DEFAULT_CRESCENDO_PRIMARY_CTA_LABEL: &str = "Visit scroogled.io";
-const DEFAULT_CRESCENDO_PRIMARY_CTA_HREF: &str = "https://scroogled.io";
-const DEFAULT_CRESCENDO_SECONDARY_CTA_LABEL: &str = "Read it on Amazon";
-const DEFAULT_CRESCENDO_SECONDARY_CTA_HREF: &str = "https://www.amazon.com";
-
 fn default_dek() -> String {
     DEFAULT_DEK.to_string()
-}
-
-fn default_crescendo_eyebrow() -> Option<String> {
-    Some(DEFAULT_CRESCENDO_EYEBROW.to_string())
-}
-
-fn default_crescendo_book_title() -> Option<String> {
-    Some(DEFAULT_CRESCENDO_BOOK_TITLE.to_string())
-}
-
-fn default_crescendo_book_subtitle() -> Option<String> {
-    Some(DEFAULT_CRESCENDO_BOOK_SUBTITLE.to_string())
-}
-
-fn default_crescendo_primary_cta_label() -> Option<String> {
-    Some(DEFAULT_CRESCENDO_PRIMARY_CTA_LABEL.to_string())
-}
-
-fn default_crescendo_primary_cta_href() -> Option<String> {
-    Some(DEFAULT_CRESCENDO_PRIMARY_CTA_HREF.to_string())
-}
-
-fn default_crescendo_primary_cta_new_tab() -> Option<bool> {
-    Some(true)
-}
-
-fn default_crescendo_secondary_cta_label() -> Option<String> {
-    Some(DEFAULT_CRESCENDO_SECONDARY_CTA_LABEL.to_string())
-}
-
-fn default_crescendo_secondary_cta_href() -> Option<String> {
-    Some(DEFAULT_CRESCENDO_SECONDARY_CTA_HREF.to_string())
-}
-
-fn default_crescendo_secondary_cta_new_tab() -> Option<bool> {
-    Some(true)
 }
 
 fn default_eyebrow() -> Option<String> {
@@ -364,17 +301,8 @@ fn create_draft(app: tauri::AppHandle, title: String, slug: Option<String>) -> R
         location: default_location(),
         category: None,
         tags: vec![],
-        crescendo_eyebrow: default_crescendo_eyebrow(),
         crescendo_heading: None,
         crescendo_body: vec![],
-        crescendo_book_title: default_crescendo_book_title(),
-        crescendo_book_subtitle: default_crescendo_book_subtitle(),
-        crescendo_primary_cta_label: default_crescendo_primary_cta_label(),
-        crescendo_primary_cta_href: default_crescendo_primary_cta_href(),
-        crescendo_primary_cta_new_tab: default_crescendo_primary_cta_new_tab(),
-        crescendo_secondary_cta_label: default_crescendo_secondary_cta_label(),
-        crescendo_secondary_cta_href: default_crescendo_secondary_cta_href(),
-        crescendo_secondary_cta_new_tab: default_crescendo_secondary_cta_new_tab(),
         last_edited: now_iso(),
     };
 
@@ -464,9 +392,6 @@ fn build_frontmatter(meta: &DraftMeta) -> String {
             .join(", ");
         lines.push(format!("tags: [{}]", tags));
     }
-    if let Some(v) = &meta.crescendo_eyebrow {
-        lines.push(format!("crescendoEyebrow: {}", yaml_escape(v)));
-    }
     if let Some(v) = &meta.crescendo_heading {
         lines.push(format!("crescendoHeading: {}", yaml_escape(v)));
     }
@@ -475,30 +400,6 @@ fn build_frontmatter(meta: &DraftMeta) -> String {
         for para in &meta.crescendo_body {
             lines.push(format!("  - {}", yaml_escape(para)));
         }
-    }
-    if let Some(v) = &meta.crescendo_book_title {
-        lines.push(format!("crescendoBookTitle: {}", yaml_escape(v)));
-    }
-    if let Some(v) = &meta.crescendo_book_subtitle {
-        lines.push(format!("crescendoBookSubtitle: {}", yaml_escape(v)));
-    }
-    if let Some(v) = &meta.crescendo_primary_cta_label {
-        lines.push(format!("crescendoPrimaryCtaLabel: {}", yaml_escape(v)));
-    }
-    if let Some(v) = &meta.crescendo_primary_cta_href {
-        lines.push(format!("crescendoPrimaryCtaHref: {}", yaml_escape(v)));
-    }
-    if meta.crescendo_primary_cta_new_tab == Some(false) {
-        lines.push("crescendoPrimaryCtaNewTab: false".to_string());
-    }
-    if let Some(v) = &meta.crescendo_secondary_cta_label {
-        lines.push(format!("crescendoSecondaryCtaLabel: {}", yaml_escape(v)));
-    }
-    if let Some(v) = &meta.crescendo_secondary_cta_href {
-        lines.push(format!("crescendoSecondaryCtaHref: {}", yaml_escape(v)));
-    }
-    if meta.crescendo_secondary_cta_new_tab == Some(false) {
-        lines.push("crescendoSecondaryCtaNewTab: false".to_string());
     }
 
     lines.push("---".to_string());
@@ -670,17 +571,8 @@ fn parse_frontmatter(raw: &str) -> Result<(DraftMeta, String), String> {
         location: default_location(),
         category: None,
         tags: vec![],
-        crescendo_eyebrow: None,
         crescendo_heading: None,
         crescendo_body: vec![],
-        crescendo_book_title: None,
-        crescendo_book_subtitle: None,
-        crescendo_primary_cta_label: None,
-        crescendo_primary_cta_href: None,
-        crescendo_primary_cta_new_tab: None,
-        crescendo_secondary_cta_label: None,
-        crescendo_secondary_cta_href: None,
-        crescendo_secondary_cta_new_tab: None,
         last_edited: now_iso(),
     };
 
@@ -721,26 +613,7 @@ fn parse_frontmatter(raw: &str) -> Result<(DraftMeta, String), String> {
                         .filter(|t| !t.is_empty())
                         .collect();
                 }
-                "crescendoEyebrow" => meta.crescendo_eyebrow = Some(unquote_yaml(val)),
                 "crescendoHeading" => meta.crescendo_heading = Some(unquote_yaml(val)),
-                "crescendoBookTitle" => meta.crescendo_book_title = Some(unquote_yaml(val)),
-                "crescendoBookSubtitle" => meta.crescendo_book_subtitle = Some(unquote_yaml(val)),
-                "crescendoPrimaryCtaLabel" => {
-                    meta.crescendo_primary_cta_label = Some(unquote_yaml(val))
-                }
-                "crescendoPrimaryCtaHref" => meta.crescendo_primary_cta_href = Some(unquote_yaml(val)),
-                "crescendoPrimaryCtaNewTab" => {
-                    meta.crescendo_primary_cta_new_tab = Some(val == "true")
-                }
-                "crescendoSecondaryCtaLabel" => {
-                    meta.crescendo_secondary_cta_label = Some(unquote_yaml(val))
-                }
-                "crescendoSecondaryCtaHref" => {
-                    meta.crescendo_secondary_cta_href = Some(unquote_yaml(val))
-                }
-                "crescendoSecondaryCtaNewTab" => {
-                    meta.crescendo_secondary_cta_new_tab = Some(val == "true")
-                }
                 "crescendoBody" => {
                     in_crescendo = true;
                     if let Some(para) = val.strip_prefix("- ") {
